@@ -49,11 +49,18 @@ namespace {
                 }
 
                 std::string params = res_arr.dump();
-                std::string config = ctx.configuration.dump();
+
+                std::string config{};
+                if(ctx.parameters.find("configuration") !=
+                   ctx.parameters.end()) {
+                   config = ctx.parameters.at("configuration").dump();
+                }
+
                 std::list<boost::any> arguments;
                 arguments.push_back(boost::any(std::ref(params)));
                 arguments.push_back(boost::any(std::ref(config)));
                 irods::invoke_policy(ctx.rei, policy_to_invoke, arguments);
+
             }; // job
 
             irods::thread_pool thread_pool{number_of_threads};
