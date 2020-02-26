@@ -146,7 +146,7 @@ def data_retention_alternate_attributes_configured(arg=None):
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
                         {    "pre_or_post_invocation" : ["post"],
-                            "events" : ["create", "read", "write", "rename", "registration", "replication"],
+                            "events" : ["replication"],
                             "policy"    : "irods_policy_data_retention",
                             "configuration" : {
                                 "log_errors" : "true",
@@ -488,7 +488,7 @@ OUTPUT ruleExecOut"""
 
 
 
-    def test_direct_invocation_with_preserve_replicas(self):
+    def test_direct_invocation_with_preserve_replicas_alternate_attribute(self):
         with session.make_session_for_existing_admin() as admin_session:
             try:
                 filename = 'test_put_file'
@@ -527,7 +527,7 @@ OUTPUT ruleExecOut"""
 
 
 
-    def test_event_handler_invocation_with_trim_single_preserve_replica(self):
+    def test_event_handler_invocation_with_trim_single_preserve_replica_alternate_attribute(self):
         with session.make_session_for_existing_admin() as admin_session:
             admin_session.assert_icommand('imeta set -R AnotherResc event_handler_attribute true')
             with data_retention_alternate_attributes_configured():
