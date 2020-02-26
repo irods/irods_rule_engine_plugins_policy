@@ -188,7 +188,7 @@ namespace {
                                                     "resource_white_list"
                                                   , resource_white_list);
         if(err.ok()) {
-            if(!source_resource.empty()) {
+            if(source_resource.empty()) {
                 return ERROR(
                            SYS_INVALID_INPUT_PARAM
                          , "resource whitelist provided with empty source resource");

@@ -277,7 +277,7 @@ OUTPUT ruleExecOut"""
             "object_path" : "/tempZone/home/rods/test_put_file"
         },
         "configuration" : {
-            "attribute" : "calling_access_time_attribute"
+            "attribute" : "direct_invocation_attribute"
         }
     }
 }
@@ -290,7 +290,7 @@ OUTPUT ruleExecOut"""
 
                 with access_time_alternate_attributes_configured():
                     admin_session.assert_icommand(['irule', '-F', rule_file])
-                    admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'calling_access_time_attribute')
+                    admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'direct_invocation_attribute')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
 
