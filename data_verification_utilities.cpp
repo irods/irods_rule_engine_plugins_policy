@@ -15,15 +15,11 @@
 extern irods::resource_manager resc_mgr;
 
 namespace {
-    struct verification_type {
-        static const std::string catalog;
-        static const std::string checksum;
-        static const std::string filesystem;
+    namespace verification_type {
+        static const std::string catalog{"catalog"};
+        static const std::string checksum{"checksum"};
+        static const std::string filesystem{"filesystem"};
     };
-
-    const std::string verification_type::catalog{"catalog"};
-    const std::string verification_type::checksum{"checksum"};
-    const std::string verification_type::filesystem{"filesystem"};
 
     rodsLong_t get_file_size_from_filesystem(
         rsComm_t*          _comm,

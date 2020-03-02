@@ -66,7 +66,6 @@ namespace {
         auto comm = ctx.rei->rsComm;
 
         if(!destination_resource.empty()) {
-
             // direct call invocation
             int err = replicate_object_to_resource(
                             comm
@@ -110,13 +109,15 @@ namespace {
                 }
             }
             else {
-                auto src_dst_map{ctx.configuration.at("source_to_destination_map")};
-                if(src_dst_map.empty()) {
+                if(ctx.configuration.find("source_to_destination_map") ==
+                   ctx.configuration.end()) {
                     THROW(
                         SYS_INVALID_INPUT_PARAM,
                         boost::format("%s - destination_resource or source_to_destination_map not provided")
                         % ctx.policy_name);
                 }
+
+                auto src_dst_map{ctx.configuration.at("source_to_destination_map")};
 
                 auto dst_resc_arr{src_dst_map.at(source_resource)};
                 auto destination_resources = dst_resc_arr.get<std::vector<std::string>>();

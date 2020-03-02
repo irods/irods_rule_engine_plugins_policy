@@ -14,13 +14,10 @@ namespace pe = irods::policy_engine;
 
 namespace {
 
-    struct mode {
-        static const std::string remove_all;
-        static const std::string trim_single;
+    namespace mode {
+        static const std::string remove_all{"remove_all_replicas"};
+        static const std::string trim_single{"trim_single_replica"};
     };
-
-    const std::string mode::remove_all{"remove_all_replicas"};
-    const std::string mode::trim_single{"trim_single_replica"};
 
     int remove_data_object(
           int                _api_index
