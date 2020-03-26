@@ -3,7 +3,7 @@
 #include "irods_re_ruleexistshelper.hpp"
 #include "irods_plugin_context.hpp"
 #include "irods_hierarchy_parser.hpp"
-#include "data_object_modified_utilities.hpp"
+#include "event_handler_utilities.hpp"
 #include "rule_engine_plugin_configuration_json.hpp"
 #include "rcMisc.h"
 

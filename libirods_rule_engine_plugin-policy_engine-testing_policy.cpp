@@ -13,6 +13,24 @@ namespace {
 
     namespace pe = irods::policy_engine;
 
+    auto entity_type_to_option(const std::string& _type) {
+        if("data_object" == _type) {
+            return "-d";
+        }
+        else if("collection" == _type) {
+            return "-C";
+        }
+        else if("user" == _type) {
+            return "-u";
+        }
+        else if("resource" == _type) {
+            return "-R";
+        }
+        else {
+            return "unsupported";
+        }
+    } // entity_type_to_option
+
     irods::error testing_policy(const pe::context& ctx)
     {
         std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
@@ -38,13 +56,26 @@ namespace {
         auto comm  = ctx.rei->rsComm;
         std::string event = ctx.parameters["event"];
 
-        modAVUMetadataInp_t set_op{
-              "add"
-            , "-d"
-            , const_cast<char*>(object_path.c_str())
-            , "irods_policy_testing_policy"
-            , const_cast<char*>(event.c_str())
-            , ""};
+        std::string entity_type, option, target;
+        modAVUMetadataInp_t set_op{};
+        if("METADATA" == event) {
+            entity_type  = ctx.parameters["entity_type"];
+            option = entity_type_to_option(entity_type);
+            target = ctx.parameters["target"];
+
+            set_op.arg0 = "add";
+            set_op.arg1 = const_cast<char*>(option.c_str());
+            set_op.arg2 = const_cast<char*>(target.c_str());
+            set_op.arg3 = "irods_policy_testing_policy";
+            set_op.arg4 = const_cast<char*>(event.c_str());
+        }
+        else {
+            set_op.arg0 = "add";
+            set_op.arg1 = "-d";
+            set_op.arg2 = const_cast<char*>(object_path.c_str());
+            set_op.arg3 = "irods_policy_testing_policy";
+            set_op.arg4 = const_cast<char*>(event.c_str());
+        }
 
         auto status = rsModAVUMetadata(comm, &set_op);
         if(status < 0) {
