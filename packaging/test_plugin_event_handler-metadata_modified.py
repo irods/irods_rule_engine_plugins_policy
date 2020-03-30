@@ -37,7 +37,7 @@ def event_handler_configured(arg=None):
                 'plugin_specific_configuration': {
                     "policies_to_invoke" : [
                         {
-                            "pre_or_post_invocation" : ["post"],
+                            "active_policy_clauses" : ["post"],
                             "events" : ["metadata"],
                             "policy"    : "irods_policy_testing_policy",
                             "configuration" : {

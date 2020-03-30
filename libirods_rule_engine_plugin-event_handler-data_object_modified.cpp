@@ -96,7 +96,7 @@ namespace {
 
         std::list<boost::any> args;
         for(auto& policy : policies_to_invoke) {
-            auto pre_post = policy["pre_or_post_invocation"];
+            auto pre_post = policy["active_policy_clauses"];
             if(pre_post.empty()) {
                 continue;
             }

@@ -72,7 +72,7 @@ def data_replication_with_event_handler_configured(arg=None):
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {    "pre_or_post_invocation" : ["post"],
+                        {   "active_policy_clauses" : ["post"],
                             "events" : ["create", "read", "write", "rename", "registration"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {
@@ -163,7 +163,7 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {    "pre_or_post_invocation" : ["post"],
+                        {   "active_policy_clauses" : ["post"],
                             "events" : ["create", "read", "write", "rename", "registration"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {

@@ -105,7 +105,7 @@ def data_movement_configured_with_event_handler(arg=None):
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {   "pre_or_post_invocation" : ["post"],
+                        {   "active_policy_clauses" : ["post"],
                             "events" : ["create"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {

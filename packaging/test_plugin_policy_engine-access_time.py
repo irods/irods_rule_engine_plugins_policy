@@ -36,7 +36,7 @@ def access_time_configured(arg=None):
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {    "pre_or_post_invocation" : ["post"],
+                        {    "active_policy_clauses" : ["post"],
                             "events" : ["create", "read", "write", "rename", "registration", "replication"],
                             "policy"    : "irods_policy_access_time",
                             "configuration" : {
@@ -89,7 +89,7 @@ def access_time_alternate_attributes_configured(arg=None):
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {    "pre_or_post_invocation" : ["post"],
+                        {   "active_policy_clauses" : ["post"],
                             "events" : ["create", "read", "write", "rename", "registration", "replication"],
                             "policy"    : "irods_policy_access_time",
                             "configuration" : {
