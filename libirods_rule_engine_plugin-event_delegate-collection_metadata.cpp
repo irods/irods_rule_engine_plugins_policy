@@ -13,14 +13,14 @@ namespace {
 
     auto match_metadata(
           const json&         matching_metadata
-        , const std::vector<fs::metadata>& filesystem_metadata) -> bool
+        , const std::vector<fs::metadata>& filesystem_metadata) -> std::tuple<bool, fs::metadata>
     {
         const auto& ma{matching_metadata["attribute"]};
         const auto& mv{matching_metadata["value"]};
         const auto& mu{matching_metadata["units"]};
 
         if(ma.empty() && mv.empty() && mu.empty()) {
-            return false;
+            return std::make_tuple(false, fs::metadata{});
         }
 
         for( const auto& fsmd : filesystem_metadata) {
@@ -40,11 +40,11 @@ namespace {
             }
 
             if(matched) {
-                return true;
+                return std::make_tuple(true, fsmd);
             }
         }
 
-        return false;
+        return std::make_tuple(false, fs::metadata{});
 
     } // match_metadata
 
@@ -101,7 +101,8 @@ namespace {
                     continue;
                 }
 
-                if(!match_metadata(policy_metadata, md)) {
+                bool ec{false}; fs::metadata fsmd{};
+                if(std::tie(ec, fsmd) = match_metadata(policy_metadata, md); !ec) {
                     current_path = current_path.parent_path();
                     continue;
                 }
@@ -109,7 +110,12 @@ namespace {
                 auto cfg{policy["configuration"]};
                 std::string pn{policy["policy"]};
 
-                std::string params{ctx.parameters.dump()};
+                auto new_params = ctx.parameters;
+                new_params["attribute"] = fsmd.attribute;
+                new_params["value"]     = fsmd.attribute;
+                new_params["units"]     = fsmd.units;
+
+                std::string params{new_params.dump()};
                 std::string config{cfg.dump()};
 
                 std::list<boost::any> args;
