@@ -55,12 +55,12 @@ namespace {
 
         std::list<boost::any> args;
         for(auto& policy : policies_to_invoke) {
-            auto pre_post = policy["pre_or_post_invocation"];
-            if(pre_post.empty()) {
+            auto policy_clauses = policy["active_policy_clauses"];
+            if(policy_clauses.empty()) {
                 continue;
             }
 
-            for(auto& p : pre_post) {
+            for(auto& p : policy_clauses) {
                 std::string suffix{"_"}; suffix += p;
                 if(_rule_name.find(suffix) != std::string::npos) {
                     auto ops = policy["events"];
@@ -140,6 +140,7 @@ namespace {
                 jobj["attribute"]   = meta_inp->arg3;
                 jobj["value"]       = meta_inp->arg4;
                 jobj["unit"]        = meta_inp->arg5;
+                jobj["policy_enforcement_point"] = _rule_name;
 
                 invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
             }

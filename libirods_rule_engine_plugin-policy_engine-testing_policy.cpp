@@ -63,14 +63,14 @@ namespace {
             option = entity_type_to_option(entity_type);
             target = ctx.parameters["target"];
 
-            set_op.arg0 = "add";
+            set_op.arg0 = "set";
             set_op.arg1 = const_cast<char*>(option.c_str());
             set_op.arg2 = const_cast<char*>(target.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
         else {
-            set_op.arg0 = "add";
+            set_op.arg0 = "set";
             set_op.arg1 = "-d";
             set_op.arg2 = const_cast<char*>(object_path.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
