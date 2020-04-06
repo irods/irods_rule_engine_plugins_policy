@@ -27,15 +27,16 @@ namespace {
 
             bool matched{true};
 
-            if(!ma.empty()) {
+            if(!ma.size()) {
                 matched = matched && (ma == fsmd.attribute);
             }
 
-            if(!mv.empty()) {
+            if(!mv.size()) {
                 matched = matched && (mv == fsmd.value);
             }
 
-            if(!mu.empty()) {
+            if(!mu.size()) {
+                std::cout << "TESTING MU\n";
                 matched = matched && (mu == fsmd.units);
             }
 
@@ -110,10 +111,14 @@ namespace {
                 auto cfg{policy["configuration"]};
                 std::string pn{policy["policy"]};
 
+                auto fsmd_obj = json::object();
+                fsmd_obj["attribute"] = fsmd.attribute;
+                fsmd_obj["value"]     = fsmd.value;
+                fsmd_obj["units"]     = fsmd.units;
+
+                // NOTE :: need both matched metadata and the metadata that was possibly SET by the handler?
                 auto new_params = ctx.parameters;
-                new_params["attribute"] = fsmd.attribute;
-                new_params["value"]     = fsmd.attribute;
-                new_params["units"]     = fsmd.units;
+                new_params["match_metadata"] = fsmd_obj;
 
                 std::string params{new_params.dump()};
                 std::string config{cfg.dump()};

@@ -139,7 +139,7 @@ namespace {
                 jobj["target"]      = meta_inp->arg2;
                 jobj["attribute"]   = meta_inp->arg3;
                 jobj["value"]       = meta_inp->arg4;
-                jobj["unit"]        = meta_inp->arg5;
+                jobj["units"]       = meta_inp->arg5;
                 jobj["policy_enforcement_point"] = _rule_name;
 
                 invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
