@@ -2,6 +2,7 @@
 #include "irods_re_plugin.hpp"
 #include "irods_exception.hpp"
 
+#include "filesystem.hpp"
 #include "rodsError.h"
 
 #include "json.hpp"
@@ -15,4 +16,15 @@ namespace irods {
     auto serialize_openedDataObjInp_to_json(const openedDataObjInp_t& _inp) -> json;
     auto serialize_rsComm_to_json(rsComm_t*) -> json;
 
+    namespace experimental::filesystem {
+        struct comparison_fields {
+            bool attribute;
+            bool value;
+            bool units;
+        };
+
+        auto compare_metadata(const metadata&,
+                              const metadata&,
+                              const comparison_fields&) -> bool;
+    };
 } // namespace irods

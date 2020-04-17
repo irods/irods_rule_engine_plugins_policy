@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR) #CPACK_DEBIAN_<COMPONENT>_PACK
 
 
 find_package(IRODS 4.2.8 EXACT REQUIRED)
+set(IRODS_PLUGIN_REVISION "0")
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
@@ -13,7 +14,7 @@ string(REPLACE "_" "-" PROJECT_NAME_HYPHENS ${PROJECT_NAME})
 project( ${PROJECT_NAME} C CXX)
 include(${IRODS_TARGETS_PATH})
 
-set(IRODS_PLUGIN_VERSION "${IRODS_VERSION_MAJOR}.${IRODS_VERSION_MINOR}.${IRODS_VERSION_PATCH}.0")
+set(IRODS_PLUGIN_VERSION "${IRODS_VERSION}.${IRODS_PLUGIN_REVISION}")
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -97,6 +98,8 @@ include(${CMAKE_SOURCE_DIR}/data_verification.cmake)
 include(${CMAKE_SOURCE_DIR}/testing_policy.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_delegate_collection_metadata.cmake)
+
+include(${CMAKE_SOURCE_DIR}/event_generator_object_metadata.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_handler_data_object_modified.cmake)
 include(${CMAKE_SOURCE_DIR}/event_handler_metadata_modified.cmake)

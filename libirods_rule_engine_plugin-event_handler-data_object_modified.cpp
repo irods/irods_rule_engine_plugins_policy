@@ -83,7 +83,7 @@ namespace {
         ruleExecInfo_t*    _rei,
         const std::string& _event,
         const std::string& _rule_name,
-        const std::string& _obj_json_str) {
+        const json&        _obj_json) {
         auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
 
         if(policies_to_invoke.empty()) {
@@ -116,17 +116,28 @@ namespace {
                             continue;
                         }
 
-                        auto cfg{policy["configuration"]};
-                        std::string pn{policy["policy"]};
+                        auto pnm{policy["policy"]};
 
-                        std::string params = _obj_json_str;
-                        std::string config = cfg.dump();
+                        json, cfg(), pam{};
+
+                        if(policy.contains("configuration")) {
+                            cfg = policy.at("configuration");
+                        }
+
+                        if(policy.contains("parameters")) {
+                            pam = policy.at("parameters");
+                        }
+
+                        pam += _obj_json;
+
+                        std::string params{pam.dump()};
+                        std::string config{cfg.dump()};
 
                         args.clear();
                         args.push_back(boost::any(std::ref(params)));
                         args.push_back(boost::any(std::ref(config)));
 
-                        irods::invoke_policy(_rei, pn, args);
+                        irods::invoke_policy(_rei, pnm, args);
                     } // for ops
 
                 } // if suffix
@@ -169,7 +180,7 @@ namespace {
             jobj["policy_enforcement_point"] = _rule_name;
             jobj["event"] = event;
             jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+            invoke_policies_for_object(_rei, event, _rule_name, jobj);
 
         } // for i
 
@@ -249,7 +260,7 @@ namespace {
                 jobj["policy_enforcement_point"] = _rule_name;
                 jobj["event"] = event;
                 jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, jobj);
             }
             else if("pep_api_data_obj_lseek_pre"   == _rule_name ||
                     "pep_api_data_obj_lseek_post"  == _rule_name) {
@@ -274,7 +285,7 @@ namespace {
                 jobj["policy_enforcement_point"] = _rule_name;
                 jobj["event"] = event;
                 jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, jobj);
 
             }
             else if("pep_api_data_obj_copy_pre"  == _rule_name ||
@@ -294,13 +305,13 @@ namespace {
                 src_jobj["policy_enforcement_point"] = _rule_name;
                 src_jobj["event"] = event;
                 src_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, src_jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
 
                 auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
                 dst_jobj["policy_enforcement_point"] = _rule_name;
                 dst_jobj["event"] = event;
                 dst_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
 
             }
             else if("pep_api_data_obj_rename_pre"  == _rule_name) {
@@ -319,7 +330,7 @@ namespace {
                 src_jobj["policy_enforcement_point"] = _rule_name;
                 src_jobj["event"] = event;
                 src_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, src_jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
             }
             else if("pep_api_data_obj_rename_post" == _rule_name) {
                 auto it = _arguments.begin();
@@ -337,7 +348,7 @@ namespace {
                 dst_jobj["policy_enforcement_point"] = _rule_name;
                 dst_jobj["event"] = event;
                 dst_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
             }
             // uses the file descriptor table to track modify operations
             // only add an entry if the object is created or opened for write
@@ -399,11 +410,11 @@ namespace {
                 jobj["policy_enforcement_point"] = _rule_name;
                 jobj["event"] = event;
                 jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, jobj);
 
                 if(trunc_flag) {
                     jobj["event"] = "TRUNCATE";
-                    invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+                    invoke_policies_for_object(_rei, event, _rule_name, jobj);
                 }
 
             } // else if

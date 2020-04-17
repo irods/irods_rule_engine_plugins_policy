@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "event_handler_utilities.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "json.hpp"
 
@@ -11,43 +12,49 @@ namespace {
     using fsp  = fs::path;
     using json = nlohmann::json;
 
-    auto match_metadata(
-          const json&         matching_metadata
+    auto match_filesystem_metadata(
+          const json&                      matching_metadata
         , const std::vector<fs::metadata>& filesystem_metadata) -> std::tuple<bool, fs::metadata>
     {
-        const auto& ma{matching_metadata["attribute"]};
-        const auto& mv{matching_metadata["value"]};
-        const auto& mu{matching_metadata["units"]};
+        std::string attribute, value, units;
 
-        if(ma.empty() && mv.empty() && mu.empty()) {
+        if(matching_metadata.find("attribute") != matching_metadata.end()) {
+            attribute = matching_metadata["attribute"];
+        }
+
+        if(matching_metadata.find("value") != matching_metadata.end()) {
+            value = matching_metadata["value"];
+        }
+
+        if(matching_metadata.find("units") != matching_metadata.end()) {
+            units = matching_metadata["units"];
+        }
+
+        const fs::metadata mmd{
+              attribute
+            , value
+            , units
+        };
+
+        if(mmd.attribute.empty() && mmd.value.empty() && mmd.units.empty()) {
             return std::make_tuple(false, fs::metadata{});
         }
 
-        for( const auto& fsmd : filesystem_metadata) {
+        fs::comparison_fields fields {
+              mmd.attribute.size() > 0
+            , mmd.value.size()     > 0
+            , mmd.units.size()     > 0
+        };
 
-            bool matched{true};
-
-            if(!ma.size()) {
-                matched = matched && (ma == fsmd.attribute);
-            }
-
-            if(!mv.size()) {
-                matched = matched && (mv == fsmd.value);
-            }
-
-            if(!mu.size()) {
-                std::cout << "TESTING MU\n";
-                matched = matched && (mu == fsmd.units);
-            }
-
-            if(matched) {
+        for(const auto& fsmd : filesystem_metadata) {
+            if(fs::compare_metadata(mmd, fsmd, fields)) {
                 return std::make_tuple(true, fsmd);
             }
         }
 
         return std::make_tuple(false, fs::metadata{});
 
-    } // match_metadata
+    } // match_filesystem_metadata
 
     irods::error event_delegate_collection_metadata(const pe::context& ctx)
     {
@@ -86,7 +93,26 @@ namespace {
 
         const fsp root_path("/");
         for(auto& policy : policies_to_invoke) {
-            auto policy_metadata{policy["match_metadata"]};
+            json policy_metadata{};
+
+            if(policy.contains("match") && policy.at("match").contains("metadata")) {
+                policy_metadata = policy["match"]["metadata"];
+            }
+            else {
+                rodsLog(
+                    LOG_ERROR,
+                    "event_delegate-collection_metadata does not contain match metadata objects");
+                continue;
+            }
+
+            if(policy_metadata.contains("entity_type") &&
+               ctx.parameters.contains("metadata") &&
+               ctx.parameters.at("metadata").contains("entity_type")) {
+               if(policy_metadata.at("entity_type") !=
+                  ctx.parameters.at("metadata").at("entity_type")) {
+                   continue;
+               }
+            }
 
             fsp current_path{object_path};
 
@@ -103,7 +129,7 @@ namespace {
                 }
 
                 bool ec{false}; fs::metadata fsmd{};
-                if(std::tie(ec, fsmd) = match_metadata(policy_metadata, md); !ec) {
+                if(std::tie(ec, fsmd) = match_filesystem_metadata(policy_metadata, md); !ec) {
                     current_path = current_path.parent_path();
                     continue;
                 }
@@ -111,14 +137,12 @@ namespace {
                 auto cfg{policy["configuration"]};
                 std::string pn{policy["policy"]};
 
-                auto fsmd_obj = json::object();
-                fsmd_obj["attribute"] = fsmd.attribute;
-                fsmd_obj["value"]     = fsmd.value;
-                fsmd_obj["units"]     = fsmd.units;
-
-                // NOTE :: need both matched metadata and the metadata that was possibly SET by the handler?
                 auto new_params = ctx.parameters;
-                new_params["match_metadata"] = fsmd_obj;
+                new_params["match"]["metadata"] = {
+                    {"attribute", fsmd.attribute},
+                    {"value", fsmd.value},
+                    {"units", fsmd.units}
+                };
 
                 std::string params{new_params.dump()};
                 std::string config{cfg.dump()};
@@ -127,7 +151,14 @@ namespace {
                 args.push_back(boost::any(std::ref(params)));
                 args.push_back(boost::any(std::ref(config)));
 
-                irods::invoke_policy(ctx.rei, pn, args);
+                try {
+                    irods::invoke_policy(ctx.rei, pn, args);
+                }
+                catch(...) {
+                    rodsLog(
+                        LOG_ERROR,
+                        "caught exception in collection metadata delegate");
+                }
 
                 current_path = current_path.parent_path();
 

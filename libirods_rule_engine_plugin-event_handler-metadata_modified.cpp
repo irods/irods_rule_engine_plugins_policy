@@ -19,6 +19,9 @@
 #include <algorithm>
 
 #include "json.hpp"
+
+namespace fs = irods::experimental::filesystem;
+
 using json = nlohmann::json;
 
 namespace {
@@ -38,13 +41,49 @@ namespace {
                 consumed_policy_enforcement_points.end());
     } // rule_name_is_supported
 
+
+    auto match_event_metadata(
+          const json& mm
+        , const json& em) -> bool
+    {
+        if(mm.contains("entity_type") &&
+           em.contains("entity_type")) {
+           if(mm.at("entity_type") != em.at("entity_type")) {
+               return false;
+           }
+        }
+
+        const fs::metadata mmd{
+              mm.contains("attribute") ? mm["attribute"] : ""
+            , mm.contains("value")     ? mm["value"]     : ""
+            , mm.contains("units")     ? mm["units"]     : ""};
+
+        const fs::metadata emd{
+              em.contains("attribute") ? em["attribute"] : ""
+            , em.contains("value")     ? em["value"]     : ""
+            , em.contains("units")     ? em["units"]     : ""};
+
+        if(mmd.attribute.empty() && mmd.value.empty() && mmd.units.empty()) {
+            return true;
+        }
+
+        fs::comparison_fields fields {
+              mmd.attribute.size() > 0
+            , mmd.value.size()     > 0
+            , mmd.units.size()     > 0
+        };
+
+        return fs::compare_metadata(mmd, emd, fields);
+
+    } // match_event_metadata
+
     void invoke_policies_for_object(
         ruleExecInfo_t*    _rei,
         const std::string& _event,
         const std::string& _rule_name,
-        const std::string& _obj_json_str) {
-        auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
+        const json&        _obj_json) {
 
+        auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
         if(policies_to_invoke.empty()) {
             rodsLog(
                 LOG_ERROR,
@@ -60,12 +99,27 @@ namespace {
                 continue;
             }
 
-            for(auto& p : policy_clauses) {
-                std::string suffix{"_"}; suffix += p;
+            for(auto& clause : policy_clauses) {
+                std::string suffix{"_"}; suffix += clause;
                 if(_rule_name.find(suffix) != std::string::npos) {
+
+                    // look for conditionals
+                    if(policy.contains("match")) {
+                        if(policy.at("match").contains("metadata")){
+                            auto match_metadata = policy.at("match").at("metadata");
+                            auto event_metadata = _obj_json.at("metadata");
+                            if(!match_event_metadata(
+                                    match_metadata,
+                                    event_metadata)) {
+                                    continue;
+                            }
+
+                            policy["parameters"]["match"]["metadata"] = _obj_json["metadata"];
+                        }
+                    } // if conditional
+
                     auto ops = policy["events"];
                     for(auto& op : ops) {
-
                         std::string upper_operation{op};
                         std::transform(upper_operation.begin(),
                                        upper_operation.end(),
@@ -75,17 +129,35 @@ namespace {
                             continue;
                         }
 
-                        auto cfg{policy["configuration"]};
-                        std::string pn{policy["policy"]};
+                        try {
+                            json pam{}, cfg{};
+                            if(policy.contains("parameters")) {
+                                pam = policy["parameters"];
+                            }
 
-                        std::string params = _obj_json_str;
-                        std::string config = cfg.dump();
+                            if(policy.contains("configuration")) {
+                                cfg = policy["configuration"];
+                            }
 
-                        args.clear();
-                        args.push_back(boost::any(std::ref(params)));
-                        args.push_back(boost::any(std::ref(config)));
+                            std::string pn{policy["policy"]};
 
-                        irods::invoke_policy(_rei, pn, args);
+                            pam.insert(_obj_json.begin(), _obj_json.end());
+
+                            std::string params = pam.dump();
+                            std::string config = cfg.dump();
+
+                            args.clear();
+                            args.push_back(boost::any(std::ref(params)));
+                            args.push_back(boost::any(std::ref(config)));
+
+                            irods::invoke_policy(_rei, pn, args);
+                        }
+                        catch(...) {
+                            rodsLog(
+                                LOG_ERROR,
+                                "caught exception in metadata event handler");
+                        }
+
                     } // for ops
 
                 } // if suffix
@@ -93,21 +165,29 @@ namespace {
         } // for policy
     } // invoke_policies_for_object
 
+    namespace entity_type {
+        inline const std::string data_object{"data_object"};
+        inline const std::string collection{"collection"};
+        inline const std::string resource{"resource"};
+        inline const std::string user{"user"};
+        inline const std::string unsupported{"unsupported"};
+    } // entity_type
+
     auto get_entity_type(const std::string& _arg) {
         if("-d" == _arg) {
-            return "data_object";
+            return entity_type::data_object;
         }
         else if("-C" == _arg) {
-            return "collection";
+            return entity_type::collection;
         }
         else if("-R" == _arg) {
-            return "resource";
+            return entity_type::resource;
         }
         else if("-u" == _arg) {
-            return "user";
+            return entity_type::user;
         }
         else {
-            return "unsupported";
+            return entity_type::unsupported;
         }
     }
 
@@ -115,6 +195,7 @@ namespace {
         const std::string&           _rule_name,
         ruleExecInfo_t*              _rei,
         const std::list<boost::any>& _arguments) {
+
         try {
             auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
 
@@ -128,21 +209,34 @@ namespace {
                         "invalid number of arguments");
                 }
 
-                auto meta_inp = boost::any_cast<modAVUMetadataInp_t*>(*it);
-
-                auto event = peps_to_events.at(_rule_name);
+                const auto meta_inp{boost::any_cast<modAVUMetadataInp_t*>(*it)};
+                const auto event{peps_to_events.at(_rule_name)};
+                const auto entity_type = get_entity_type(meta_inp->arg1);
 
                 json jobj{};
                 jobj["event"]       = event;
                 jobj["operation"]   = meta_inp->arg0;
-                jobj["entity_type"] = get_entity_type(meta_inp->arg1);
-                jobj["target"]      = meta_inp->arg2;
-                jobj["attribute"]   = meta_inp->arg3;
-                jobj["value"]       = meta_inp->arg4;
-                jobj["units"]       = meta_inp->arg5;
+                if(entity_type::data_object == entity_type ||
+                   entity_type::collection  == entity_type) {
+                    jobj["logical_path"] = meta_inp->arg2;
+                }
+                else if(entity_type::resource == entity_type) {
+                    jobj["source_resource"] = meta_inp->arg2;
+                }
+                else if(entity_type::user == entity_type) {
+                    jobj["user_name"] = meta_inp->arg2;
+                }
+
+                jobj["metadata"] = {
+                    {"entity_type", entity_type},
+                    {"attribute", meta_inp->arg3},
+                    {"value",     meta_inp->arg4},
+                    {"units",     meta_inp->arg5}
+                };
+
                 jobj["policy_enforcement_point"] = _rule_name;
 
-                invoke_policies_for_object(_rei, event, _rule_name, jobj.dump());
+                invoke_policies_for_object(_rei, event, _rule_name, jobj);
             }
         }
         catch(const std::invalid_argument& _e) {

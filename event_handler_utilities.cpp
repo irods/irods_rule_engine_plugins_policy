@@ -137,5 +137,29 @@ namespace irods {
 
     } // serialize_rsComm_ptr
 
+    namespace fs = irods::experimental::filesystem;
+    auto fs::compare_metadata(
+        const fs::metadata&          first,
+        const fs::metadata&          second,
+        const fs::comparison_fields& fields) -> bool
+    {
+            bool matched{true};
+
+            if(fields.attribute) {
+                matched = matched && (first.attribute == second.attribute);
+            }
+
+            if(fields.value) {
+                matched = matched && (first.value == second.value);
+            }
+
+            if(fields.units) {
+                matched = matched && (first.units == second.units);
+            }
+
+            return matched;
+
+    } // compare_metadata
+
 } // namespace irods
 
