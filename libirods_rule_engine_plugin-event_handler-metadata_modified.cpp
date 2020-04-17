@@ -131,26 +131,28 @@ namespace {
 
                         try {
                             json pam{}, cfg{};
+
                             if(policy.contains("parameters")) {
-                                pam = policy["parameters"];
+                                pam = policy.at("parameters");
+                                pam.insert(_obj_json.begin(), _obj_json.end());
+                            }
+                            else {
+                                pam = _obj_json;
                             }
 
                             if(policy.contains("configuration")) {
                                 cfg = policy["configuration"];
                             }
 
-                            std::string pn{policy["policy"]};
-
-                            pam.insert(_obj_json.begin(), _obj_json.end());
-
-                            std::string params = pam.dump();
-                            std::string config = cfg.dump();
+                            std::string pnm{policy["policy"]};
+                            std::string params{pam.dump()};
+                            std::string config{cfg.dump()};
 
                             args.clear();
                             args.push_back(boost::any(std::ref(params)));
                             args.push_back(boost::any(std::ref(config)));
 
-                            irods::invoke_policy(_rei, pn, args);
+                            irods::invoke_policy(_rei, pnm, args);
                         }
                         catch(...) {
                             rodsLog(

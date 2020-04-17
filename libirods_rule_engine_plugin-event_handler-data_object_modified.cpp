@@ -116,28 +116,37 @@ namespace {
                             continue;
                         }
 
-                        auto pnm{policy["policy"]};
+                        try {
+                            json cfg{}, pam{};
 
-                        json, cfg(), pam{};
+                            if(policy.contains("parameters")) {
+                                pam = policy.at("parameters");
+                                pam.insert(_obj_json.begin(), _obj_json.end());
+                            }
+                            else {
+                                pam = _obj_json;
+                            }
 
-                        if(policy.contains("configuration")) {
-                            cfg = policy.at("configuration");
+                            if(policy.contains("configuration")) {
+                                cfg = policy.at("configuration");
+                            }
+
+                            std::string pnm{policy["policy"]};
+                            std::string params{pam.dump()};
+                            std::string config{cfg.dump()};
+
+                            args.clear();
+                            args.push_back(boost::any(std::ref(params)));
+                            args.push_back(boost::any(std::ref(config)));
+
+                            irods::invoke_policy(_rei, pnm, args);
+                            }
+                        catch(...) {
+                            rodsLog(
+                                LOG_ERROR,
+                                "caught exception in metadata event handler");
                         }
 
-                        if(policy.contains("parameters")) {
-                            pam = policy.at("parameters");
-                        }
-
-                        pam += _obj_json;
-
-                        std::string params{pam.dump()};
-                        std::string config{cfg.dump()};
-
-                        args.clear();
-                        args.push_back(boost::any(std::ref(params)));
-                        args.push_back(boost::any(std::ref(config)));
-
-                        irods::invoke_policy(_rei, pnm, args);
                     } // for ops
 
                 } // if suffix

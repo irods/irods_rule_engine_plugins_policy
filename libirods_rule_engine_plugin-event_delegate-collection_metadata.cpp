@@ -73,23 +73,12 @@ namespace {
                        "policies_to_invoke is empty for event delegate");
         }
 
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
 
-        if(ctx.parameters.is_array()) {
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            std::tie(user_name, tmp_coll_name, tmp_data_name) =
-                irods::extract_array_parameters<3, std::string>(ctx.parameters);
-
-            object_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-
-        }
-        else {
-            std::tie(user_name, object_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_first_resc);
-        }
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
+            irods::capture_parameters(
+                  ctx.parameters
+                , irods::tag_first_resc);
 
         const fsp root_path("/");
         for(auto& policy : policies_to_invoke) {
@@ -108,13 +97,14 @@ namespace {
             if(policy_metadata.contains("entity_type") &&
                ctx.parameters.contains("metadata") &&
                ctx.parameters.at("metadata").contains("entity_type")) {
+
                if(policy_metadata.at("entity_type") !=
                   ctx.parameters.at("metadata").at("entity_type")) {
                    continue;
                }
             }
 
-            fsp current_path{object_path};
+            fsp current_path{logical_path};
 
             while(current_path != root_path) {
                 if(fsvr::is_data_object(*comm, current_path)) {
@@ -151,14 +141,7 @@ namespace {
                 args.push_back(boost::any(std::ref(params)));
                 args.push_back(boost::any(std::ref(config)));
 
-                try {
-                    irods::invoke_policy(ctx.rei, pn, args);
-                }
-                catch(...) {
-                    rodsLog(
-                        LOG_ERROR,
-                        "caught exception in collection metadata delegate");
-                }
+                irods::invoke_policy(ctx.rei, pn, args);
 
                 current_path = current_path.parent_path();
 

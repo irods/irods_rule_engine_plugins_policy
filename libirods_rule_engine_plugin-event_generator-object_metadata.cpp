@@ -53,6 +53,7 @@ namespace {
                     auto new_params = ctx.parameters;
                     new_params["event_type"] = "METADATA";
                     new_params["metadata"] = {
+                        {"entity_type", "data_object"},
                         {"attribute", md.attribute},
                         {"value",     md.value},
                         {"units",     md.units}
