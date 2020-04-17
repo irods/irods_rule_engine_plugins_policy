@@ -52,24 +52,10 @@ namespace {
 
         std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
 
-        // query processor invocation
-        if(ctx.parameters.is_array()) {
-            using fsp = irods::experimental::filesystem::path;
-
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            std::tie(user_name, tmp_coll_name, tmp_data_name, source_resource) =
-                irods::extract_array_parameters<4, std::string>(ctx.parameters);
-
-            object_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-        }
-        else {
-            // event handler or direct call invocation
-            std::tie(user_name, object_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_first_resc);
-        }
+        std::tie(user_name, object_path, source_resource, destination_resource) =
+            irods::capture_parameters(
+                  ctx.parameters
+                , irods::tag_first_resc);
 
         if(destination_resource.empty()) {
             irods::error err;

@@ -51,7 +51,7 @@ namespace {
 
             // event handler or direct call invocation
             std::tie(user_name, object_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
+                irods::capture_parameters(
                       ctx.parameters
                     , irods::tag_first_resc);
 

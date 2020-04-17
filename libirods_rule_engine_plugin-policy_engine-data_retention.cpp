@@ -142,42 +142,12 @@ namespace {
     {
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string mode{}, user_name{}, object_path{}, source_resource{}, attribute{};
+        std::string mode{}, user_name{}, object_path{}, source_resource{}, destination_resource{}, attribute{};
 
-        // query processor invocation
-        if(ctx.parameters.is_array()) {
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            if(ctx.parameters.size() == 4) {
-                std::tie(user_name, tmp_coll_name, tmp_data_name, source_resource) =
-                    irods::extract_array_parameters<4, std::string>(ctx.parameters);
-            }
-            else if(ctx.parameters.size() == 3) {
-                std::tie(user_name, tmp_coll_name, tmp_data_name) =
-                    irods::extract_array_parameters<3, std::string>(ctx.parameters);
-            }
-            else {
-                return ERROR(
-                           SYS_INVALID_INPUT_PARAM,
-                           boost::format("invalid number of parameters [%d] for query invocation for [%s]")
-                           % ctx.parameters.size()
-                           % object_path);
-            }
-
-            using fsp = irods::experimental::filesystem::path;
-
-            object_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-        }
-        // direct or event handler invocation
-        else {
-            std::string tmp_dst_resc;
-
-            // event handler or direct call invocation
-            std::tie(user_name, object_path, source_resource, tmp_dst_resc) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_last_resc);
-        }
+        std::tie(user_name, object_path, source_resource, destination_resource) =
+            irods::capture_parameters(
+                  ctx.parameters
+                , irods::tag_last_resc);
 
         auto err = SUCCESS();
         std::vector<std::string> resource_white_list{};

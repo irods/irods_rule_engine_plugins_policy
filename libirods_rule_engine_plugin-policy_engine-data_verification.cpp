@@ -13,32 +13,10 @@ namespace {
 
         std::string user_name{}, object_path{}, source_resource{}, destination_resource{}, verification_type{}, unit{};
 
-        if(ctx.parameters.is_array()) {
-            using fsp = irods::experimental::filesystem::path;
-
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            std::tie(user_name, tmp_coll_name, tmp_data_name, destination_resource) =
-                irods::extract_array_parameters<4, std::string>(ctx.parameters);
-
-            object_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-
-            auto [err, tmp_src_resc] = cfg_mgr.get_value("source_resource", "");
-            if(!err.ok()) {
-                return ERROR(
-                           SYS_INVALID_INPUT_PARAM,
-                           "source_resource missing for query invocation");
-           }
-
-           source_resource = tmp_src_resc;
-        }
-        else {
-            // event handler or direct call invocation
-            std::tie(user_name, object_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_last_resc);
-        }
+        std::tie(user_name, object_path, source_resource, destination_resource) =
+            irods::capture_parameters(
+                  ctx.parameters
+                , irods::tag_last_resc);
 
         auto [err, attribute] = cfg_mgr.get_value("attribute", "irods::verification::type");
 
