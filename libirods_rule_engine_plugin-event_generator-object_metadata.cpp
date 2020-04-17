@@ -37,47 +37,48 @@ namespace {
             std::string policy_name{policy["policy"]};
             std::string config{policy["configuration"].dump()};
 
-            fsp current_path{logical_path};
+            fsp object_path{logical_path};
 
-            for(auto && path : fsvr::recursive_collection_iterator(*comm, current_path)) {
-                if(fsvr::is_collection(*comm, path)) {
-                    continue;
+            if(fsvr::is_collection(*comm, object_path)) {
+                rodsLog(
+                    LOG_ERROR,
+                    "even_generator-object_metadata :: [%s] is a collection",
+                    logical_path.c_str());
+                continue;
+            }
+
+            auto object_metadata{fsvr::get_metadata(*comm, object_path)};
+            if(object_metadata.empty()) {
+                continue;
+            }
+
+            for(auto && md : object_metadata) {
+                auto new_params = ctx.parameters;
+                new_params["event_type"] = "METADATA";
+                new_params["metadata"] = {
+                    {"entity_type", "data_object"},
+                    {"attribute", md.attribute},
+                    {"value",     md.value},
+                    {"units",     md.units}
+                };
+
+                new_params["logical_path"] = object_path.c_str();
+                std::string params{new_params.dump()};
+
+                std::list<boost::any> args;
+                args.push_back(boost::any(std::ref(params)));
+                args.push_back(boost::any(std::ref(config)));
+
+                try {
+                    irods::invoke_policy(ctx.rei, policy_name, args);
+                }
+                catch(...) {
+                    rodsLog(
+                        LOG_ERROR,
+                        "caught exception in object metadata generator\n");
                 }
 
-                auto object_metadata{fsvr::get_metadata(*comm, path)};
-                if(object_metadata.empty()) {
-                    continue;
-                }
-
-                for(auto && md : object_metadata) {
-                    auto new_params = ctx.parameters;
-                    new_params["event_type"] = "METADATA";
-                    new_params["metadata"] = {
-                        {"entity_type", "data_object"},
-                        {"attribute", md.attribute},
-                        {"value",     md.value},
-                        {"units",     md.units}
-                    };
-
-                    new_params["logical_path"] = path.path().c_str();
-                    std::string params{new_params.dump()};
-
-                    std::list<boost::any> args;
-                    args.push_back(boost::any(std::ref(params)));
-                    args.push_back(boost::any(std::ref(config)));
-
-                    try {
-                        irods::invoke_policy(ctx.rei, policy_name, args);
-                    }
-                    catch(...) {
-                        rodsLog(
-                            LOG_ERROR,
-                            "caught exception in object metadata generator\n");
-                    }
-
-                } // for md
-
-            } // for path
+            } // for md
 
         } // for policies_to_invoke
 

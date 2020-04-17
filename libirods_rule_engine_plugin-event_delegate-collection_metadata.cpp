@@ -97,7 +97,6 @@ namespace {
             if(policy_metadata.contains("entity_type") &&
                ctx.parameters.contains("metadata") &&
                ctx.parameters.at("metadata").contains("entity_type")) {
-
                if(policy_metadata.at("entity_type") !=
                   ctx.parameters.at("metadata").at("entity_type")) {
                    continue;
@@ -129,6 +128,7 @@ namespace {
 
                 auto new_params = ctx.parameters;
                 new_params["match"]["metadata"] = {
+                    {"entity_type", "collection"},
                     {"attribute", fsmd.attribute},
                     {"value", fsmd.value},
                     {"units", fsmd.units}

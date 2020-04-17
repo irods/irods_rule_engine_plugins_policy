@@ -57,7 +57,6 @@ namespace {
 
             irods::error err;
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
-
             auto number_of_threads{irods::extract_object_parameter<int>("number_of_threads", ctx.parameters)};
             auto query_limit{irods::extract_object_parameter<int>("query_limit", ctx.parameters)};
             auto query_type_string{irods::extract_object_parameter<std::string>("query_type", ctx.parameters)};
