@@ -52,14 +52,20 @@ namespace {
                 continue;
             }
 
+            std::string operation{};
+            if(ctx.parameters.contains("operation")) {
+                operation = ctx.parameters.at("operation");
+            }
+
             for(auto && md : object_metadata) {
                 auto new_params = ctx.parameters;
                 new_params["event_type"] = "METADATA";
                 new_params["metadata"] = {
+                    {"operation",   operation},
                     {"entity_type", "data_object"},
-                    {"attribute", md.attribute},
-                    {"value",     md.value},
-                    {"units",     md.units}
+                    {"attribute",   md.attribute},
+                    {"value",       md.value},
+                    {"units",       md.units}
                 };
 
                 new_params["logical_path"] = path.c_str();

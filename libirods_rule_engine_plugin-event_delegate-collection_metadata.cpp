@@ -128,12 +128,18 @@ namespace {
                 auto cfg{policy["configuration"]};
                 std::string pn{policy["policy"]};
 
+                std::string operation{};
+                if(ctx.parameters.contains("operation")) {
+                    operation = ctx.parameters.at("operation");
+                }
+
                 auto new_params = ctx.parameters;
                 new_params["conditional"]["metadata"] = {
+                    {"operation",   operation},
                     {"entity_type", entity_type},
-                    {"attribute", fsmd.attribute},
-                    {"value", fsmd.value},
-                    {"units", fsmd.units}
+                    {"attribute",   fsmd.attribute},
+                    {"value",       fsmd.value},
+                    {"units",       fsmd.units}
                 };
 
                 std::string params{new_params.dump()};

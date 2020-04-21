@@ -43,37 +43,51 @@ namespace {
 
 
     auto metadata_is_equivalent(
-          const json& mm
+          const json& cm
         , const json& em) -> bool
     {
-        if(mm.contains("entity_type") &&
+        if(cm.contains("entity_type") &&
            em.contains("entity_type")) {
-           if(mm.at("entity_type") != em.at("entity_type")) {
+           if(cm.at("entity_type") != em.at("entity_type")) {
                return false;
            }
         }
+        if(cm.contains("operation") &&
+           em.contains("operation")) {
+            bool found = false;
+            for(const auto op : cm.at("operation")) {
+                if(op == em.at("operation")) {
+                    found = true;
+                    break;
+                }
+            }
 
-        const fs::metadata mmd{
-              mm.contains("attribute") ? mm["attribute"] : ""
-            , mm.contains("value")     ? mm["value"]     : ""
-            , mm.contains("units")     ? mm["units"]     : ""};
+            if(!found) {
+                return false;
+            }
+        }
+
+        const fs::metadata cmd{
+              cm.contains("attribute") ? cm["attribute"] : ""
+            , cm.contains("value")     ? cm["value"]     : ""
+            , cm.contains("units")     ? cm["units"]     : ""};
 
         const fs::metadata emd{
               em.contains("attribute") ? em["attribute"] : ""
             , em.contains("value")     ? em["value"]     : ""
             , em.contains("units")     ? em["units"]     : ""};
 
-        if(mmd.attribute.empty() && mmd.value.empty() && mmd.units.empty()) {
+        if(cmd.attribute.empty() && cmd.value.empty() && cmd.units.empty()) {
             return true;
         }
 
         fs::comparison_fields fields {
-              mmd.attribute.size() > 0
-            , mmd.value.size()     > 0
-            , mmd.units.size()     > 0
+              cmd.attribute.size() > 0
+            , cmd.value.size()     > 0
+            , cmd.units.size()     > 0
         };
 
-        return fs::compare_metadata(mmd, emd, fields);
+        return fs::compare_metadata(cmd, emd, fields);
 
     } // metadata_is_equivalent
 
@@ -81,7 +95,7 @@ namespace {
         ruleExecInfo_t*    _rei,
         const std::string& _event,
         const std::string& _rule_name,
-        const json&        _obj_json) {
+        const json&        _parameters) {
 
         auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
         if(policies_to_invoke.empty()) {
@@ -105,9 +119,9 @@ namespace {
 
                     // look for conditionals
                     if(policy.contains("conditional")) {
-                        if(policy.at("conditional").contains("metadata")){
+                        if(policy.at("conditional").contains("metadata")) {
                             auto conditional_metadata = policy.at("conditional").at("metadata");
-                            auto event_metadata = _obj_json.at("metadata");
+                            auto event_metadata = _parameters.at("metadata");
                             if(!metadata_is_equivalent(
                                     conditional_metadata,
                                     event_metadata)) {
@@ -115,7 +129,7 @@ namespace {
                             }
 
                             // need to use bracket syntax, creates objects if they do not exist
-                            policy["parameters"]["conditional"]["metadata"] = _obj_json["metadata"];
+                            policy["parameters"]["conditional"]["metadata"] = _parameters["metadata"];
                         }
                     } // if conditional
 
@@ -135,10 +149,10 @@ namespace {
 
                             if(policy.contains("parameters")) {
                                 pam = policy.at("parameters");
-                                pam.insert(_obj_json.begin(), _obj_json.end());
+                                pam.insert(_parameters.begin(), _parameters.end());
                             }
                             else {
-                                pam = _obj_json;
+                                pam = _parameters;
                             }
 
                             if(policy.contains("configuration")) {
@@ -217,8 +231,7 @@ namespace {
                 const auto entity_type = get_entity_type(meta_inp->arg1);
 
                 json jobj{};
-                jobj["event"]       = event;
-                jobj["operation"]   = meta_inp->arg0;
+                jobj["event"] = event;
                 if(entity_type::data_object == entity_type ||
                    entity_type::collection  == entity_type) {
                     jobj["logical_path"] = meta_inp->arg2;
@@ -231,10 +244,11 @@ namespace {
                 }
 
                 jobj["metadata"] = {
+                    {"operation",   meta_inp->arg0},
                     {"entity_type", entity_type},
-                    {"attribute", meta_inp->arg3},
-                    {"value",     meta_inp->arg4},
-                    {"units",     meta_inp->arg5}
+                    {"attribute",   meta_inp->arg3},
+                    {"value",       meta_inp->arg4},
+                    {"units",       meta_inp->arg5}
                 };
 
                 jobj["policy_enforcement_point"] = _rule_name;
