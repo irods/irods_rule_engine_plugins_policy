@@ -114,7 +114,8 @@ namespace {
                                     continue;
                             }
 
-                            policy.at("parameters").at("conditional").at("metadata") = _obj_json["metadata"];
+                            // need to use bracket syntax, creates objects if they do not exist
+                            policy["parameters"]["conditional"]["metadata"] = _obj_json["metadata"];
                         }
                     } // if conditional
 
