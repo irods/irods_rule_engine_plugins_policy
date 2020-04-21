@@ -43,10 +43,12 @@ def object_event_handler_configured(arg=None):
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
-                                        "match_metadata" : {
-                                            "attribute" : "irods::testing::attribute",
-                                            "value"     : "irods::testing::value",
-                                            "units"     : "irods::testing::units"
+                                        "match" : {
+                                            "metadata" : {
+                                                "attribute" : "irods::testing::attribute",
+                                                "value"     : "irods::testing::value",
+                                                "units"     : "irods::testing::units"
+                                            }
                                         },
                                         "policy"    : "irods_policy_testing_policy",
                                         "configuration" : {
@@ -112,10 +114,12 @@ def metadata_event_handler_configured(arg=None):
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
-                                        "match_metadata" : {
-                                            "attribute" : "irods::testing::attribute",
-                                            "value"     : "irods::testing::value",
-                                            "units"     : "irods::testing::units"
+                                        "match" : {
+                                            "metadata" : {
+                                                "attribute" : "irods::testing::attribute",
+                                                "value"     : "irods::testing::value",
+                                                "units"     : "irods::testing::units"
+                                            }
                                         },
                                         "policy"    : "irods_policy_testing_policy",
                                         "configuration" : {
@@ -201,6 +205,7 @@ class TestEventDelegateCollectionMetadata(ResourceBase, unittest.TestCase):
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
                     admin_session.assert_icommand('iadmin rum')
+                    admin_session.assert_icommand('imeta rm -C /tempZone/home irods::testing::attribute irods::testing::value irods::testing::units')
 
 
 

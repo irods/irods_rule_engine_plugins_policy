@@ -156,7 +156,7 @@ class TestPolicyEngineDataVerification(ResourceBase, unittest.TestCase):
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -194,7 +194,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -232,7 +232,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -271,7 +271,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -313,7 +313,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -352,7 +352,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -739,7 +739,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "AnotherResc",
         "destination_resource" : "AnotherResc"
     },

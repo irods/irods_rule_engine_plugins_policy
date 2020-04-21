@@ -36,8 +36,8 @@ def access_time_configured(arg=None):
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
-                        {    "active_policy_clauses" : ["post"],
-                            "events" : ["create", "read", "write", "rename", "registration", "replication"],
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
                             "policy"    : "irods_policy_access_time",
                             "configuration" : {
                             }
@@ -90,7 +90,7 @@ def access_time_alternate_attributes_configured(arg=None):
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
-                            "events" : ["create", "read", "write", "rename", "registration", "replication"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
                             "policy"    : "irods_policy_access_time",
                             "configuration" : {
                                 "attribute"  : "event_handler_attribute"
@@ -153,7 +153,7 @@ class TestPolicyEngineAccessTime(ResourceBase, unittest.TestCase):
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file"
+            "logical_path" : "/tempZone/home/rods/test_put_file"
         },
         "configuration" : {
         }
@@ -206,7 +206,9 @@ OUTPUT ruleExecOut"""
               "query_limit" : 10,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_access_time"
+              "policy_to_invoke" : "irods_policy_access_time",
+              "configuration" : {
+              }
          }
     }
 }
@@ -240,7 +242,7 @@ OUTPUT ruleExecOut"""
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file"
+            "logical_path" : "/tempZone/home/rods/test_put_file"
         },
         "configuration" : {
         }
@@ -274,7 +276,7 @@ OUTPUT ruleExecOut"""
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file"
+            "logical_path" : "/tempZone/home/rods/test_put_file"
         },
         "configuration" : {
             "attribute" : "direct_invocation_attribute"

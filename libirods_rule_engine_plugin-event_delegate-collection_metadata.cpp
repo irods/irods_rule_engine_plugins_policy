@@ -104,6 +104,8 @@ namespace {
             }
 
             fsp current_path{logical_path};
+            const std::string entity_type = (fsvr::is_data_object(*comm, current_path)) ?
+                                            "data_object" : "collection";
 
             while(current_path != root_path) {
                 if(fsvr::is_data_object(*comm, current_path)) {
@@ -128,7 +130,7 @@ namespace {
 
                 auto new_params = ctx.parameters;
                 new_params["match"]["metadata"] = {
-                    {"entity_type", "collection"},
+                    {"entity_type", entity_type},
                     {"attribute", fsmd.attribute},
                     {"value", fsmd.value},
                     {"units", fsmd.units}
@@ -140,7 +142,6 @@ namespace {
                 std::list<boost::any> args;
                 args.push_back(boost::any(std::ref(params)));
                 args.push_back(boost::any(std::ref(config)));
-
                 irods::invoke_policy(ctx.rei, pn, args);
 
                 current_path = current_path.parent_path();

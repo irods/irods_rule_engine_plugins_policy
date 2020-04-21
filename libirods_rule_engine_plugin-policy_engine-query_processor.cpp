@@ -47,10 +47,10 @@ namespace {
     irods::error query_processor_policy(const pe::context& ctx)
     {
         try {
-            std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
+            std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
             // event handler or direct call invocation
-            std::tie(user_name, object_path, source_resource, destination_resource) =
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
                 irods::capture_parameters(
                       ctx.parameters
                     , irods::tag_first_resc);
@@ -65,7 +65,7 @@ namespace {
 
             auto policy_to_invoke{irods::extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
 
-            fs::path path{object_path};
+            fs::path path{logical_path};
 
             auto& comm = *ctx.rei->rsComm;
             if(fsvr::is_collection(comm, path)) {

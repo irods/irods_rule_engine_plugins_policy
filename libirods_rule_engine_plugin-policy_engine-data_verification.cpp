@@ -11,14 +11,39 @@ namespace {
     {
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{}, verification_type{}, unit{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{}, verification_type{}, unit{};
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_last_resc);
+        // may be within the configuration
+        irods::error err{};
+        std::tie(err, source_resource) = cfg_mgr.get_value("source_resource", "");
 
-        auto [err, attribute] = cfg_mgr.get_value("attribute", "irods::verification::type");
+        // query processor invocation
+        if(ctx.parameters.contains("query_results")) {
+            using fsp = irods::experimental::filesystem::path;
+
+            std::string tmp_coll_name{}, tmp_data_name{};
+
+            std::tie(user_name, tmp_coll_name, tmp_data_name, destination_resource) =
+                irods::extract_array_parameters<4, std::string>(ctx.parameters.at("query_results"));
+
+            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
+        }
+        else {
+            // event handler or direct call invocation
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
+                irods::extract_dataobj_inp_parameters(
+                      ctx.parameters
+                    , irods::tag_first_resc);
+        }
+
+        if(source_resource.empty()) {
+            return ERROR(
+                       SYS_INVALID_INPUT_PARAM,
+                       "irods_policy_data_verification :: source_resource is not specified");
+        }
+
+        std::string attribute{};
+        std::tie(err, attribute) = cfg_mgr.get_value("attribute", "irods::verification::type");
 
         auto comm = ctx.rei->rsComm;
 
@@ -28,7 +53,7 @@ namespace {
             return irods::verify_replica_for_destination_resource(
                          &comm
                        , verification_type
-                       , object_path
+                       , logical_path
                        , source_resource
                        , destination_resource);};
 

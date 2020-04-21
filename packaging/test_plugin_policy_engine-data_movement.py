@@ -106,7 +106,7 @@ def data_movement_configured_with_event_handler(arg=None):
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
-                            "events" : ["create"],
+                            "events" : ["put"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
@@ -201,7 +201,7 @@ class TestPolicyEngineDataMovement(ResourceBase, unittest.TestCase):
     "policy_to_invoke" : "irods_policy_data_movement",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
@@ -238,7 +238,7 @@ OUTPUT ruleExecOut"""
     "policy_to_invoke" : "irods_policy_data_movement",
     "parameters" : {
         "user_name" : "rods",
-        "object_path" : "/tempZone/home/rods/test_put_file",
+        "logical_path" : "/tempZone/home/rods/test_put_file",
         "source_resource" : "demoResc"
     },
     "configuration" : {

@@ -13,12 +13,12 @@ namespace {
     int replicate_object_to_resource(
           rsComm_t*          _comm
         , const std::string& _user_name
-        , const std::string& _object_path
+        , const std::string& _logical_path
         , const std::string& _source_resource
         , const std::string& _destination_resource)
     {
         dataObjInp_t data_obj_inp{};
-        rstrcpy(data_obj_inp.objPath, _object_path.c_str(), MAX_NAME_LEN);
+        rstrcpy(data_obj_inp.objPath, _logical_path.c_str(), MAX_NAME_LEN);
         data_obj_inp.createMode = getDefFileMode();
         addKeyVal(&data_obj_inp.condInput, RESC_NAME_KW,      _source_resource.c_str());
         addKeyVal(&data_obj_inp.condInput, DEST_RESC_NAME_KW, _destination_resource.c_str());
@@ -43,9 +43,9 @@ namespace {
 
     irods::error replication_policy(const pe::context ctx)
     {
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
             irods::capture_parameters(
                   ctx.parameters
                 , irods::tag_first_resc);
@@ -57,14 +57,14 @@ namespace {
             int err = replicate_object_to_resource(
                             comm
                           , user_name
-                          , object_path
+                          , logical_path
                           , source_resource
                           , destination_resource);
             if(err < 0) {
                 return ERROR(
                           err,
                           boost::format("failed to replicate [%s] from [%s] to [%s]")
-                          % object_path
+                          % logical_path
                           % source_resource
                           % destination_resource);
             }
@@ -83,14 +83,14 @@ namespace {
                 int err = replicate_object_to_resource(
                                 comm
                               , user_name
-                              , object_path
+                              , logical_path
                               , source_resource
                               , destination_resource);
                 if(err < 0) {
                     return ERROR(
                               err,
                               boost::format("failed to replicate [%s] from [%s] to [%s]")
-                              % object_path
+                              % logical_path
                               % source_resource
                               % destination_resource);
                 }
@@ -113,13 +113,13 @@ namespace {
                     int err = replicate_object_to_resource(
                                     comm
                                   , user_name
-                                  , object_path
+                                  , logical_path
                                   , source_resource
                                   , dest);
                     if(err < 0) {
                         ret = PASSMSG(
                                   boost::str(boost::format("failed to replicate [%s] from [%s] to [%s]")
-                                  % object_path
+                                  % logical_path
                                   % source_resource),
                                   ret);
                     }

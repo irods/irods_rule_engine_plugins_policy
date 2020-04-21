@@ -68,33 +68,50 @@ namespace {
 
     namespace pe = irods::policy_engine;
 
+    using json = nlohmann::json;
+
     irods::error access_time_policy(const pe::context& ctx)
     {
+
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
         bool collection_operation = false;
 
         auto [err, attribute] = cfg_mgr.get_value("attribute", "irods::access_time");
 
-        auto cond_input = ctx.parameters["cond_input"];
+        auto cond_input = ctx.parameters.contains("cond_input") ? ctx.parameters.at("cond_input") : json::object();
         collection_operation = !cond_input.empty() && !cond_input[COLLECTION_KW].empty();
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_first_resc);
+        // query processor invocation
+        if(ctx.parameters.contains("query_results")) {
+            using fsp = irods::experimental::filesystem::path;
+
+            std::string tmp_coll_name{}, tmp_data_name{};
+
+            std::tie(user_name, tmp_coll_name, tmp_data_name) =
+                irods::extract_array_parameters<3, std::string>(ctx.parameters.at("query_results"));
+
+            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
+        }
+        else {
+            // event handler or direct call invocation
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
+                irods::extract_dataobj_inp_parameters(
+                      ctx.parameters
+                    , irods::tag_first_resc);
+        }
 
         auto comm = ctx.rei->rsComm;
 
         if(!collection_operation) {
-            int status =  update_access_time_for_data_object(comm, user_name, object_path, attribute);
+            int status =  update_access_time_for_data_object(comm, user_name, logical_path, attribute);
             if(status < 0) {
                 return ERROR(
                            status,
                            boost::format("failed to update access time for object [%s]")
-                           % object_path);
+                           % logical_path);
             }
         }
         else {
@@ -103,14 +120,14 @@ namespace {
             memset(&coll_inp, 0, sizeof(coll_inp));
             rstrcpy(
                   coll_inp.collName
-                , object_path.c_str()
+                , logical_path.c_str()
                 , MAX_NAME_LEN);
             int handle = rsOpenCollection(comm, &coll_inp);
             if(handle < 0) {
                 return ERROR(
                            handle,
                            boost::format("failed to open collection [%s]") %
-                           object_path);
+                           logical_path);
             }
 
             int status = apply_access_time_to_collection(comm, user_name, handle, attribute);
@@ -118,7 +135,7 @@ namespace {
                 return ERROR(
                            status,
                            boost::format("failed to update access time for collection [%s]")
-                               % object_path);
+                               % logical_path);
             }
         }
 

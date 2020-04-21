@@ -23,11 +23,11 @@ namespace {
 
     rodsLong_t get_file_size_from_filesystem(
         rsComm_t*          _comm,
-        const std::string& _object_path,
+        const std::string& _logical_path,
         const std::string& _resource_hierarchy,
         const std::string& _file_path ) {
         fileStatInp_t stat_inp{};
-        rstrcpy(stat_inp.objPath,  _object_path.c_str(),  sizeof(stat_inp.objPath));
+        rstrcpy(stat_inp.objPath,  _logical_path.c_str(),  sizeof(stat_inp.objPath));
         rstrcpy(stat_inp.rescHier, _resource_hierarchy.c_str(), sizeof(stat_inp.rescHier));
         rstrcpy(stat_inp.fileName, _file_path.c_str(), sizeof(stat_inp.fileName));
 
@@ -88,13 +88,13 @@ namespace {
     } // get_leaf_resources_string
 
     void get_object_and_collection_from_path(
-        const std::string& _object_path,
+        const std::string& _logical_path,
         std::string&       _collection_name,
         std::string&       _object_name ) {
         namespace bfs = boost::filesystem;
 
         try {
-            bfs::path p(_object_path);
+            bfs::path p(_logical_path);
             _collection_name = p.parent_path().string();
             _object_name     = p.filename().string();
         }
@@ -105,12 +105,12 @@ namespace {
 
     std::string compute_checksum_for_resource(
         rsComm_t*          _comm,
-        const std::string& _object_path,
+        const std::string& _logical_path,
         const std::string& _resource_name ) {
         // query if a checksum exists
         std::string coll_name, obj_name;
         get_object_and_collection_from_path(
-            _object_path,
+            _logical_path,
             coll_name,
             obj_name);
 
@@ -130,7 +130,7 @@ namespace {
 
         // no checksum, compute one
         dataObjInp_t data_obj_inp{};
-        rstrcpy(data_obj_inp.objPath, _object_path.c_str(), MAX_NAME_LEN);
+        rstrcpy(data_obj_inp.objPath, _logical_path.c_str(), MAX_NAME_LEN);
         addKeyVal(&data_obj_inp.condInput, RESC_NAME_KW, _resource_name.c_str());
 
         char* checksum_pointer{};
@@ -139,7 +139,7 @@ namespace {
             THROW(
                 chksum_err,
                 boost::format("checksum failed for [%s] on [%s]") %
-                _object_path %
+                _logical_path %
                 _resource_name);
         }
 
@@ -152,7 +152,7 @@ namespace {
 
     void capture_replica_attributes(
         rsComm_t*          _comm,
-        const std::string& _object_path,
+        const std::string& _logical_path,
         const std::string& _resource_name,
         std::string&       _file_path,
         std::string&       _data_size,
@@ -160,7 +160,7 @@ namespace {
         std::string&       _data_checksum ) {
         std::string coll_name, obj_name;
         get_object_and_collection_from_path(
-            _object_path,
+            _logical_path,
             coll_name,
             obj_name);
         const auto leaf_str = get_leaf_resources_string(
@@ -187,11 +187,11 @@ namespace irods {
     bool verify_replica_for_destination_resource(
         rsComm_t*          _comm,
         const std::string& _verification_type,
-        const std::string& _object_path,
+        const std::string& _logical_path,
         const std::string& _source_resource,
         const std::string& _destination_resource) {
 
-        std::string source_object_path;
+        std::string source_logical_path;
         std::string source_data_size;
         std::string source_data_hierarchy;
         std::string source_file_path;
@@ -199,14 +199,14 @@ namespace irods {
 
         capture_replica_attributes(
             _comm,
-            _object_path,
+            _logical_path,
             _source_resource,
             source_file_path,
             source_data_size,
             source_data_hierarchy,
             source_data_checksum );
 
-        std::string destination_object_path;
+        std::string destination_logical_path;
         std::string destination_data_size;
         std::string destination_data_hierarchy;
         std::string destination_file_path;
@@ -214,7 +214,7 @@ namespace irods {
 
         capture_replica_attributes(
             _comm,
-            _object_path,
+            _logical_path,
             _destination_resource,
             destination_file_path,
             destination_data_size,
@@ -231,7 +231,7 @@ namespace irods {
         else if(verification_type::filesystem == _verification_type) {
             const auto fs_size = get_file_size_from_filesystem(
                                      _comm,
-                                     _object_path,
+                                     _logical_path,
                                      destination_data_hierarchy,
                                      destination_file_path);
             const auto query_size = boost::lexical_cast<rodsLong_t>(source_data_size);
@@ -241,14 +241,14 @@ namespace irods {
             if(source_data_checksum.size() == 0) {
                 source_data_checksum = compute_checksum_for_resource(
                                            _comm,
-                                           _object_path,
+                                           _logical_path,
                                            _source_resource);
             }
 
             if(destination_data_checksum.size() == 0) {
                 destination_data_checksum = compute_checksum_for_resource(
                                                _comm,
-                                               _object_path,
+                                               _logical_path,
                                                _destination_resource);
             }
 

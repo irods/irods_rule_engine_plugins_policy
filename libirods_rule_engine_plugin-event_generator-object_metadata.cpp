@@ -37,9 +37,9 @@ namespace {
             std::string policy_name{policy["policy"]};
             std::string config{policy["configuration"].dump()};
 
-            fsp object_path{logical_path};
+            fsp path{logical_path};
 
-            if(fsvr::is_collection(*comm, object_path)) {
+            if(fsvr::is_collection(*comm, path)) {
                 rodsLog(
                     LOG_ERROR,
                     "even_generator-object_metadata :: [%s] is a collection",
@@ -47,7 +47,7 @@ namespace {
                 continue;
             }
 
-            auto object_metadata{fsvr::get_metadata(*comm, object_path)};
+            auto object_metadata{fsvr::get_metadata(*comm, path)};
             if(object_metadata.empty()) {
                 continue;
             }
@@ -62,7 +62,7 @@ namespace {
                     {"units",     md.units}
                 };
 
-                new_params["logical_path"] = object_path.c_str();
+                new_params["logical_path"] = path.c_str();
                 std::string params{new_params.dump()};
 
                 std::list<boost::any> args;

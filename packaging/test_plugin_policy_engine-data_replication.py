@@ -73,7 +73,7 @@ def data_replication_with_event_handler_configured(arg=None):
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
-                            "events" : ["create", "read", "write", "rename", "registration"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "registration"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
@@ -164,7 +164,7 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
                 "plugin_specific_configuration": {
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
-                            "events" : ["create", "read", "write", "rename", "registration"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "registration"],
                             "policy"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "attribute"  : "event_handler_attribute",
@@ -230,7 +230,7 @@ class TestPolicyEngineDataReplication(ResourceBase, unittest.TestCase):
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file",
+            "logical_path" : "/tempZone/home/rods/test_put_file",
             "source_resource" : "demoResc",
             "destination_resource" : "AnotherResc"
         },
@@ -267,7 +267,7 @@ OUTPUT ruleExecOut"""
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file",
+            "logical_path" : "/tempZone/home/rods/test_put_file",
             "source_resource" : "demoResc"
         },
         "configuration" : {
@@ -361,7 +361,7 @@ OUTPUT ruleExecOut"""
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
-            "object_path" : "/tempZone/home/rods/test_put_file",
+            "logical_path" : "/tempZone/home/rods/test_put_file",
             "source_resource" : "demoResc",
             "destination_resource" : "AnotherResc"
         },

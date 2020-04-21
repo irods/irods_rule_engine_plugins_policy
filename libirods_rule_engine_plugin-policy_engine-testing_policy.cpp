@@ -13,6 +13,8 @@ namespace {
 
     namespace pe = irods::policy_engine;
 
+    using json = nlohmann::json;
+
     auto entity_type_to_option(const std::string& _type) {
         if("data_object" == _type) {
             return "-d";
@@ -31,11 +33,29 @@ namespace {
         }
     } // entity_type_to_option
 
+    auto entity_type_to_target(const std::string& _type, json _params) {
+        if("data_object" == _type) {
+            return _params.at("logical_path").get<std::string>();
+        }
+        else if("collection" == _type) {
+            return _params.at("logical_path").get<std::string>();
+        }
+        else if("user" == _type) {
+            return _params.at("user_name").get<std::string>();
+        }
+        else if("resource" == _type) {
+            return _params.at("source_resource").get<std::string>();
+        }
+        else {
+            return std::string{"unsupported"};
+        }
+    } // entity_type_to_option
+
     irods::error testing_policy(const pe::context& ctx)
     {
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
             irods::capture_parameters(
                   ctx.parameters
                 , irods::tag_first_resc);
@@ -46,20 +66,36 @@ namespace {
         std::string entity_type, option, target;
         modAVUMetadataInp_t set_op{};
         if("METADATA" == event) {
-            entity_type  = ctx.parameters["entity_type"];
-            option = entity_type_to_option(entity_type);
-            target = ctx.parameters["target"];
+            if(ctx.parameters.contains("match")) {
+                if(ctx.parameters.contains("metadata")) {
+                    if(ctx.parameters.at("match").at("metadata").contains("entity_type")) {
+                        entity_type = ctx.parameters.at("match").at("metadata").at("entity_type");
+                    }
+                }
+            }
+            else if(ctx.parameters.contains("metadata")) {
+                if(ctx.parameters.at("metadata").contains("entity_type")) {
+                    entity_type = ctx.parameters.at("metadata").at("entity_type");
+                }
+            }
+            else {
+                return ERROR(
+                        SYS_INVALID_INPUT_PARAM,
+                        "testing_policy :: missing 'entity_type' in 'metadata'");
+            }
 
-            set_op.arg0 = "set";
+            option = entity_type_to_option(entity_type);
+            target = entity_type_to_target(entity_type, ctx.parameters);
+            set_op.arg0 = "add";
             set_op.arg1 = const_cast<char*>(option.c_str());
             set_op.arg2 = const_cast<char*>(target.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
         else {
-            set_op.arg0 = "set";
+            set_op.arg0 = "add";
             set_op.arg1 = "-d";
-            set_op.arg2 = const_cast<char*>(object_path.c_str());
+            set_op.arg2 = const_cast<char*>(logical_path.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
@@ -69,7 +105,7 @@ namespace {
             return ERROR(
                        status,
                        boost::format("Failed to invoke test_policy for [%s] with metadata [%s] [%s]")
-                       % object_path
+                       % logical_path
                        % "irods_testing_policy"
                        % event);
         }

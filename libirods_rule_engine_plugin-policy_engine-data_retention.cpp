@@ -23,13 +23,13 @@ namespace {
           int                _api_index
         , rsComm_t*          _comm
         , const std::string& _user_name
-        , const std::string& _object_path
+        , const std::string& _logical_path
         , const std::string& _source_resource = {})
     {
         dataObjInp_t obj_inp{};
         rstrcpy(
               obj_inp.objPath
-            , _object_path.c_str()
+            , _logical_path.c_str()
             , sizeof(obj_inp.objPath));
 
         addKeyVal(
@@ -66,11 +66,11 @@ namespace {
     participating_resources_without_preservation(
           rsComm_t*          _comm
         , const std::string& _attribute
-        , const std::string& _object_path
+        , const std::string& _logical_path
         , const std::string& _resource) {
         using fsp = irods::experimental::filesystem::path;
 
-        fsp path{_object_path};
+        fsp path{_logical_path};
         const auto coll_name = path.parent_path();
         const auto data_name = path.object_name();
 
@@ -142,12 +142,30 @@ namespace {
     {
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string mode{}, user_name{}, object_path{}, source_resource{}, destination_resource{}, attribute{};
+        std::string mode{}, user_name{}, logical_path{}, source_resource{}, destination_resource{}, attribute{};
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_last_resc);
+        // query processor invocation
+        if(ctx.parameters.contains("query_results")) {
+            using fsp = irods::experimental::filesystem::path;
+            std::string tmp_coll_name{}, tmp_data_name{};
+
+            auto results = ctx.parameters.at("query_results");
+            user_name     = results.at(0);
+            tmp_coll_name = results.at(1);
+            tmp_data_name = results.at(2);
+            if(results.size() > 3) {
+                source_resource = results.at(3);
+            }
+
+            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
+        }
+        else {
+            // event handler or direct call invocation
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
+                irods::extract_dataobj_inp_parameters(
+                      ctx.parameters
+                    , irods::tag_first_resc);
+        }
 
         auto err = SUCCESS();
         std::vector<std::string> resource_white_list{};
@@ -183,7 +201,7 @@ namespace {
         participating_resources_without_preservation(
               comm
             , attribute
-            , object_path
+            , logical_path
             , source_resource);
 
         // remove all replicas - requires a call to unlink, not trim
@@ -192,12 +210,12 @@ namespace {
                                    DATA_OBJ_UNLINK_AN
                                  , comm
                                  , user_name
-                                 , object_path);
+                                 , logical_path);
             if(ret < 0) {
                  return ERROR(
                            ret,
                            boost::format("failed to remove [%s] from [%s]")
-                           % object_path
+                           % logical_path
                            % source_resource);
             }
 
@@ -209,13 +227,13 @@ namespace {
                                        DATA_OBJ_TRIM_AN
                                      , comm
                                      , user_name
-                                     , object_path
+                                     , logical_path
                                      , src);
                 if(ret < 0) {
                      return ERROR(
                                ret,
                                boost::format("failed to remove [%s] from [%s]")
-                               % object_path
+                               % logical_path
                                % source_resource);
                 }
             } // for src

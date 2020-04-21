@@ -50,9 +50,9 @@ namespace {
 
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string user_name{}, object_path{}, source_resource{}, destination_resource{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
-        std::tie(user_name, object_path, source_resource, destination_resource) =
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
             irods::capture_parameters(
                   ctx.parameters
                 , irods::tag_first_resc);
@@ -86,7 +86,7 @@ namespace {
 
         nlohmann::json params = {
               { "user_name", user_name }
-            , { "object_path", object_path }
+            , { "logical_path", logical_path }
             , { "source_resource", source_resource }
             , { "destination_resource", destination_resource }
         };
