@@ -12,22 +12,22 @@ namespace {
     using fsp  = fs::path;
     using json = nlohmann::json;
 
-    auto match_filesystem_metadata(
-          const json&                      matching_metadata
+    auto metadata_is_equivalent(
+          const json&                      metadata_to_compare
         , const std::vector<fs::metadata>& filesystem_metadata) -> std::tuple<bool, fs::metadata>
     {
         std::string attribute, value, units;
 
-        if(matching_metadata.find("attribute") != matching_metadata.end()) {
-            attribute = matching_metadata["attribute"];
+        if(metadata_to_compare.find("attribute") != metadata_to_compare.end()) {
+            attribute = metadata_to_compare["attribute"];
         }
 
-        if(matching_metadata.find("value") != matching_metadata.end()) {
-            value = matching_metadata["value"];
+        if(metadata_to_compare.find("value") != metadata_to_compare.end()) {
+            value = metadata_to_compare["value"];
         }
 
-        if(matching_metadata.find("units") != matching_metadata.end()) {
-            units = matching_metadata["units"];
+        if(metadata_to_compare.find("units") != metadata_to_compare.end()) {
+            units = metadata_to_compare["units"];
         }
 
         const fs::metadata mmd{
@@ -54,7 +54,7 @@ namespace {
 
         return std::make_tuple(false, fs::metadata{});
 
-    } // match_filesystem_metadata
+    } // metadata_is_equivalent
 
     irods::error event_delegate_collection_metadata(const pe::context& ctx)
     {
@@ -84,13 +84,13 @@ namespace {
         for(auto& policy : policies_to_invoke) {
             json policy_metadata{};
 
-            if(policy.contains("match") && policy.at("match").contains("metadata")) {
-                policy_metadata = policy["match"]["metadata"];
+            if(policy.contains("conditional") && policy.at("conditional").contains("metadata")) {
+                policy_metadata = policy.at("conditional").at("metadata");
             }
             else {
                 rodsLog(
                     LOG_ERROR,
-                    "event_delegate-collection_metadata does not contain match metadata objects");
+                    "event_delegate-collection_metadata does not contain conditional metadata objects");
                 continue;
             }
 
@@ -120,7 +120,7 @@ namespace {
                 }
 
                 bool ec{false}; fs::metadata fsmd{};
-                if(std::tie(ec, fsmd) = match_filesystem_metadata(policy_metadata, md); !ec) {
+                if(std::tie(ec, fsmd) = metadata_is_equivalent(policy_metadata, md); !ec) {
                     current_path = current_path.parent_path();
                     continue;
                 }
@@ -129,7 +129,7 @@ namespace {
                 std::string pn{policy["policy"]};
 
                 auto new_params = ctx.parameters;
-                new_params["match"]["metadata"] = {
+                new_params["conditional"]["metadata"] = {
                     {"entity_type", entity_type},
                     {"attribute", fsmd.attribute},
                     {"value", fsmd.value},

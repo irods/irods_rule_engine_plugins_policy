@@ -42,7 +42,7 @@ namespace {
     } // rule_name_is_supported
 
 
-    auto match_event_metadata(
+    auto metadata_is_equivalent(
           const json& mm
         , const json& em) -> bool
     {
@@ -75,7 +75,7 @@ namespace {
 
         return fs::compare_metadata(mmd, emd, fields);
 
-    } // match_event_metadata
+    } // metadata_is_equivalent
 
     void invoke_policies_for_object(
         ruleExecInfo_t*    _rei,
@@ -104,17 +104,17 @@ namespace {
                 if(_rule_name.find(suffix) != std::string::npos) {
 
                     // look for conditionals
-                    if(policy.contains("match")) {
-                        if(policy.at("match").contains("metadata")){
-                            auto match_metadata = policy.at("match").at("metadata");
+                    if(policy.contains("conditional")) {
+                        if(policy.at("conditional").contains("metadata")){
+                            auto conditional_metadata = policy.at("conditional").at("metadata");
                             auto event_metadata = _obj_json.at("metadata");
-                            if(!match_event_metadata(
-                                    match_metadata,
+                            if(!metadata_is_equivalent(
+                                    conditional_metadata,
                                     event_metadata)) {
                                     continue;
                             }
 
-                            policy["parameters"]["match"]["metadata"] = _obj_json["metadata"];
+                            policy.at("parameters").at("conditional").at("metadata") = _obj_json["metadata"];
                         }
                     } // if conditional
 

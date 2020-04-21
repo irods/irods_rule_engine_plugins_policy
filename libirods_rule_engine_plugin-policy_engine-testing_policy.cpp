@@ -66,10 +66,10 @@ namespace {
         std::string entity_type, option, target;
         modAVUMetadataInp_t set_op{};
         if("METADATA" == event) {
-            if(ctx.parameters.contains("match")) {
+            if(ctx.parameters.contains("conditional")) {
                 if(ctx.parameters.contains("metadata")) {
-                    if(ctx.parameters.at("match").at("metadata").contains("entity_type")) {
-                        entity_type = ctx.parameters.at("match").at("metadata").at("entity_type");
+                    if(ctx.parameters.at("conditional").at("metadata").contains("entity_type")) {
+                        entity_type = ctx.parameters.at("conditional").at("metadata").at("entity_type");
                     }
                 }
             }

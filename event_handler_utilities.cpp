@@ -143,21 +143,21 @@ namespace irods {
         const fs::metadata&          second,
         const fs::comparison_fields& fields) -> bool
     {
-            bool matched{true};
+            bool equivalent{true};
 
             if(fields.attribute) {
-                matched = matched && (first.attribute == second.attribute);
+                equivalent = equivalent && (first.attribute == second.attribute);
             }
 
             if(fields.value) {
-                matched = matched && (first.value == second.value);
+                equivalent = equivalent && (first.value == second.value);
             }
 
             if(fields.units) {
-                matched = matched && (first.units == second.units);
+                equivalent = equivalent && (first.units == second.units);
             }
 
-            return matched;
+            return equivalent;
 
     } // compare_metadata
 

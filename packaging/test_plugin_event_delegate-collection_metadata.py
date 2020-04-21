@@ -43,7 +43,7 @@ def object_event_handler_configured(arg=None):
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
-                                        "match" : {
+                                        "conditional" : {
                                             "metadata" : {
                                                 "attribute" : "irods::testing::attribute",
                                                 "value"     : "irods::testing::value",
@@ -114,7 +114,7 @@ def metadata_event_handler_configured(arg=None):
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
-                                        "match" : {
+                                        "conditional" : {
                                             "metadata" : {
                                                 "attribute" : "irods::testing::attribute",
                                                 "value"     : "irods::testing::value",
