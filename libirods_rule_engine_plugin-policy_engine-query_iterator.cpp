@@ -4,7 +4,6 @@
 
 #include "irods_query.hpp"
 #include "thread_pool.hpp"
-#include "query_processor.hpp"
 
 #include "json.hpp"
 
@@ -44,7 +43,7 @@ namespace {
         replace_query_string_token(query_string, token, value_string);
     } // replace_query_string_tokens
 
-    irods::error query_processor_policy(const pe::context& ctx)
+    irods::error query_iterator_policy(const pe::context& ctx)
     {
         try {
             std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
@@ -65,10 +64,11 @@ namespace {
 
             auto policy_to_invoke{irods::extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
 
+            auto comm = ctx.rei->rsComm;
+
             fs::path path{logical_path};
 
-            auto& comm = *ctx.rei->rsComm;
-            if(fsvr::is_collection(comm, path)) {
+            if(fsvr::is_collection(*comm, path)) {
                 replace_query_string_token(query_string, tokens::collection_name, path.string());
             }
             else {
@@ -84,47 +84,60 @@ namespace {
             replace_query_string_token(query_string, tokens::source_resource_name, source_resource);
             replace_query_string_token(query_string, tokens::destination_resource_name, destination_resource);
 
-            using json       = nlohmann::json;
-            using result_row = irods::query_processor<rsComm_t>::result_row;
+            using json = nlohmann::json;
 
             auto params_to_pass = ctx.parameters;
 
-            auto job = [&](const result_row& _results) {
-                auto res_arr = json::array();
-                for(auto& r : _results) {
-                    res_arr.push_back(r);
+            std::vector<irods::error> errors{};
+            irods::query<rsComm_t> qobj(comm, query_string, query_limit, 0, query_type);
+
+            for(auto&& row : qobj) {
+                try{
+                    auto res_arr = json::array();
+                    for(auto& r : row) {
+                        res_arr.push_back(r);
+                    }
+
+                    params_to_pass["query_results"] = res_arr;
+                    std::string params_str = params_to_pass.dump();
+
+                    std::string config_str{};
+                    if(ctx.parameters.find("configuration") !=
+                       ctx.parameters.end()) {
+                       config_str = ctx.parameters.at("configuration").dump();
+                    }
+
+                    std::list<boost::any> arguments;
+                    arguments.push_back(boost::any(std::ref(params_str)));
+                    arguments.push_back(boost::any(std::ref(config_str)));
+                    irods::invoke_policy(ctx.rei, policy_to_invoke, arguments);
+                }
+                catch(const irods::exception& e) {
+                    errors.push_back(ERROR(e.code(), e.what()));
+                }
+                catch(const std::exception& e) {
+                    errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
+                }
+                catch(const json::exception& e) {
+                    errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
+                }
+                catch(...) {
+                    errors.push_back(ERROR(SYS_INTERNAL_ERR, "unknown exception"));
                 }
 
-                params_to_pass["query_results"] = res_arr;
-                std::string params_str = params_to_pass.dump();
+            }; // for qobj
 
-                std::string config_str{};
-                if(ctx.parameters.find("configuration") !=
-                   ctx.parameters.end()) {
-                   config_str = ctx.parameters.at("configuration").dump();
-                }
-
-                std::list<boost::any> arguments;
-                arguments.push_back(boost::any(std::ref(params_str)));
-                arguments.push_back(boost::any(std::ref(config_str)));
-                irods::invoke_policy(ctx.rei, policy_to_invoke, arguments);
-            }; // job
-
-            irods::thread_pool thread_pool{number_of_threads};
-            irods::query_processor<rsComm_t> qp(query_string, job, query_limit, query_type);
-            auto future = qp.execute(thread_pool, *ctx.rei->rsComm);
-            auto errors = future.get();
             if(errors.size() > 0) {
                 for(auto& e : errors) {
                     rodsLog(
                         LOG_ERROR,
                         "query failed [%d]::[%s]",
-                        std::get<0>(e),
-                        std::get<1>(e).c_str());
+                        e.code(),
+                        e.result().c_str());
                 }
 
                 return ERROR(
-                           SYS_INVALID_OPR_TYPE,
+                           SYS_INTERNAL_ERR,
                            boost::format(
                            "query processor encountered an error for [%d] rows for query [%s]")
                            % errors.size()
@@ -146,7 +159,7 @@ namespace {
 
         return SUCCESS();
 
-    } // query_processor_policy
+    } // query_iterator_policy
 
 } // namespace
 
@@ -203,7 +216,7 @@ pe::plugin_pointer_type plugin_factory(
 {
     return pe::make(
                  _plugin_name
-               , "irods_policy_query_processor"
+               , "irods_policy_query_iterator"
                , usage
-               , query_processor_policy);
+               , query_iterator_policy);
 } // plugin_factory

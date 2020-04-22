@@ -104,8 +104,13 @@ namespace {
             }
 
             fsp current_path{logical_path};
-            const std::string entity_type = (fsvr::is_data_object(*comm, current_path)) ?
-                                            "data_object" : "collection";
+            std::string entity_type{"collection"};
+            try {
+                std::string entity_type = (fsvr::is_data_object(*comm, current_path)) ?
+                                                "data_object" : "collection";
+            }
+            catch(...) {
+            }
 
             while(current_path != root_path) {
                 if(fsvr::is_data_object(*comm, current_path)) {
@@ -113,8 +118,15 @@ namespace {
                     continue;
                 }
 
-                auto md{fsvr::get_metadata(*comm, current_path)};
-                if(md.empty()) {
+                std::vector<fs::metadata> md{};
+                try {
+                    md = fsvr::get_metadata(*comm, current_path);
+                    if(md.empty()) {
+                        current_path = current_path.parent_path();
+                        continue;
+                    }
+                }
+                catch(...) {
                     current_path = current_path.parent_path();
                     continue;
                 }

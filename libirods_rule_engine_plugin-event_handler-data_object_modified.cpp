@@ -116,36 +116,29 @@ namespace {
                             continue;
                         }
 
-                        try {
-                            json cfg{}, pam{};
+                        json cfg{}, pam{};
 
-                            if(policy.contains("parameters")) {
-                                pam = policy.at("parameters");
-                                pam.insert(_obj_json.begin(), _obj_json.end());
-                            }
-                            else {
-                                pam = _obj_json;
-                            }
-
-                            if(policy.contains("configuration")) {
-                                cfg = policy.at("configuration");
-                            }
-
-                            std::string pnm{policy["policy"]};
-                            std::string params{pam.dump()};
-                            std::string config{cfg.dump()};
-
-                            args.clear();
-                            args.push_back(boost::any(std::ref(params)));
-                            args.push_back(boost::any(std::ref(config)));
-
-                            irods::invoke_policy(_rei, pnm, args);
-                            }
-                        catch(...) {
-                            rodsLog(
-                                LOG_ERROR,
-                                "caught exception in metadata event handler");
+                        if(policy.contains("parameters")) {
+                            pam = policy.at("parameters");
+                            pam.insert(_obj_json.begin(), _obj_json.end());
                         }
+                        else {
+                            pam = _obj_json;
+                        }
+
+                        if(policy.contains("configuration")) {
+                            cfg = policy.at("configuration");
+                        }
+
+                        std::string pnm{policy["policy"]};
+                        std::string params{pam.dump()};
+                        std::string config{cfg.dump()};
+
+                        args.clear();
+                        args.push_back(boost::any(std::ref(params)));
+                        args.push_back(boost::any(std::ref(config)));
+
+                        irods::invoke_policy(_rei, pnm, args);
 
                     } // for ops
 
@@ -199,248 +192,234 @@ namespace {
         const std::string&           _rule_name,
         ruleExecInfo_t*              _rei,
         const std::list<boost::any>& _arguments) {
-        try {
 
-            auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
 
-            if("pep_resource_resolve_hierarchy_pre"  == _rule_name ||
-               "pep_resource_resolve_hierarchy_post" == _rule_name) {
-                auto it = _arguments.begin();
-                auto ins = boost::any_cast<std::string>(*it); ++it;
-                auto ctx = boost::any_cast<irods::plugin_context>(*it); ++it;
-                auto out = boost::any_cast<std::string*>(*it); ++it;
-                auto opr = boost::any_cast<const std::string*>(*it); ++it;
-                //auto hst = boost::any_cast<const std::string*>(*it); ++it;
-                //auto prs = boost::any_cast<irods::hierarchy_parser*>(*it); ++it;
-                //auto vte = boost::any_cast<float*>(*it); ++it;
-                //std::string hier; prs->str(hier);
-                hierarchy_resolution_operation = *opr;
+        if("pep_resource_resolve_hierarchy_pre"  == _rule_name ||
+           "pep_resource_resolve_hierarchy_post" == _rule_name) {
+            auto it = _arguments.begin();
+            auto ins = boost::any_cast<std::string>(*it); ++it;
+            auto ctx = boost::any_cast<irods::plugin_context>(*it); ++it;
+            auto out = boost::any_cast<std::string*>(*it); ++it;
+            auto opr = boost::any_cast<const std::string*>(*it); ++it;
+            //auto hst = boost::any_cast<const std::string*>(*it); ++it;
+            //auto prs = boost::any_cast<irods::hierarchy_parser*>(*it); ++it;
+            //auto vte = boost::any_cast<float*>(*it); ++it;
+            //std::string hier; prs->str(hier);
+            hierarchy_resolution_operation = *opr;
+        }
+        else if("pep_api_bulk_data_obj_put_pre"  == _rule_name ||
+                "pep_api_bulk_data_obj_put_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
             }
-            else if("pep_api_bulk_data_obj_put_pre"  == _rule_name ||
-                    "pep_api_bulk_data_obj_put_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
 
-                auto bulk_inp = boost::any_cast<bulkOprInp_t*>(*it);
-                seralize_bulk_put_object_parameters(
-                      _rei
-                    , _rule_name
-                    , bulk_inp->attriArray
-                    , bulk_inp->condInput);
+            auto bulk_inp = boost::any_cast<bulkOprInp_t*>(*it);
+            seralize_bulk_put_object_parameters(
+                  _rei
+                , _rule_name
+                , bulk_inp->attriArray
+                , bulk_inp->condInput);
+        }
+        // all PEPs use the same signature
+        else if("pep_api_data_obj_put_pre"     == _rule_name ||
+                "pep_api_data_obj_get_pre"     == _rule_name ||
+                "pep_api_data_obj_unlink_pre"  == _rule_name ||
+                "pep_api_data_obj_repl_pre"    == _rule_name ||
+                "pep_api_phy_path_reg_pre"     == _rule_name ||
+                "pep_api_data_obj_chksum_pre"  == _rule_name ||
+                "pep_api_data_obj_truncate_pre"== _rule_name ||
+
+                "pep_api_data_obj_put_post"    == _rule_name ||
+                "pep_api_data_obj_get_post"    == _rule_name ||
+                "pep_api_data_obj_unlink_post" == _rule_name ||
+                "pep_api_data_obj_repl_post"   == _rule_name ||
+                "pep_api_phy_path_reg_post"    == _rule_name ||
+                "pep_api_data_obj_truncate_pre"== _rule_name ||
+                "pep_api_data_obj_chksum_post" == _rule_name) {
+
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
             }
-            // all PEPs use the same signature
-            else if("pep_api_data_obj_put_pre"     == _rule_name ||
-                    "pep_api_data_obj_get_pre"     == _rule_name ||
-                    "pep_api_data_obj_unlink_pre"  == _rule_name ||
-                    "pep_api_data_obj_repl_pre"    == _rule_name ||
-                    "pep_api_phy_path_reg_pre"     == _rule_name ||
-                    "pep_api_data_obj_chksum_pre"  == _rule_name ||
-                    "pep_api_data_obj_truncate_pre"== _rule_name ||
 
-                    "pep_api_data_obj_put_post"    == _rule_name ||
-                    "pep_api_data_obj_get_post"    == _rule_name ||
-                    "pep_api_data_obj_unlink_post" == _rule_name ||
-                    "pep_api_data_obj_repl_post"   == _rule_name ||
-                    "pep_api_phy_path_reg_post"    == _rule_name ||
-                    "pep_api_data_obj_truncate_pre"== _rule_name ||
-                    "pep_api_data_obj_chksum_post" == _rule_name) {
+            auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
+            auto jobj = irods::serialize_dataObjInp_to_json(*obj_inp);
 
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
+            const std::string event = [&]() -> const std::string {
+                const std::string& op = peps_to_events.at(_rule_name);
+                return op;
+            }();
 
-                auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
-                auto jobj = irods::serialize_dataObjInp_to_json(*obj_inp);
+            jobj["policy_enforcement_point"] = _rule_name;
+            jobj["event"] = event;
+            jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+        }
+        else if("pep_api_data_obj_lseek_pre"   == _rule_name ||
+                "pep_api_data_obj_lseek_post"  == _rule_name) {
 
-                const std::string event = [&]() -> const std::string {
-                    const std::string& op = peps_to_events.at(_rule_name);
-                    return op;
-                }();
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
 
-                jobj["policy_enforcement_point"] = _rule_name;
-                jobj["event"] = event;
-                jobj["comm"] = comm_obj;
+            auto opened_inp = boost::any_cast<openedDataObjInp_t*>(*it);
+            const auto l1_idx = opened_inp->l1descInx;
+            auto jobj = objects_in_flight[l1_idx];
+
+            const std::string event = [&]() -> const std::string {
+                const std::string& op = peps_to_events.at(_rule_name);
+                return op;
+            }();
+
+            jobj["policy_enforcement_point"] = _rule_name;
+            jobj["event"] = event;
+            jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+
+        }
+        else if("pep_api_data_obj_copy_pre"  == _rule_name ||
+                "pep_api_data_obj_copy_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
+
+            const std::string event = peps_to_events.at(_rule_name);
+            auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
+
+            auto src_jobj = irods::serialize_dataObjInp_to_json(copy_inp->srcDataObjInp);
+            src_jobj["policy_enforcement_point"] = _rule_name;
+            src_jobj["event"] = event;
+            src_jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
+
+            auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
+            dst_jobj["policy_enforcement_point"] = _rule_name;
+            dst_jobj["event"] = event;
+            dst_jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
+
+        }
+        else if("pep_api_data_obj_rename_pre"  == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
+
+            const std::string event = peps_to_events.at(_rule_name);
+            auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
+
+            auto src_jobj = irods::serialize_dataObjInp_to_json(copy_inp->srcDataObjInp);
+            src_jobj["policy_enforcement_point"] = _rule_name;
+            src_jobj["event"] = event;
+            src_jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
+        }
+        else if("pep_api_data_obj_rename_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
+
+            const std::string event = peps_to_events.at(_rule_name);
+            auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
+
+            auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
+            dst_jobj["policy_enforcement_point"] = _rule_name;
+            dst_jobj["event"] = event;
+            dst_jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
+        }
+        // uses the file descriptor table to track modify operations
+        // only add an entry if the object is created or opened for write
+        else if("pep_api_data_obj_open_pre"   == _rule_name ||
+                "pep_api_data_obj_create_pre" == _rule_name ||
+                "pep_api_data_obj_open_post"   == _rule_name ||
+                "pep_api_data_obj_create_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
+
+            auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
+
+            int l1_idx{};
+            json jobj{};
+            try {
+                std::tie(l1_idx, jobj) = irods::get_index_and_json_from_obj_inp(obj_inp);
+                objects_in_flight[l1_idx] = jobj;
+            }
+            catch(const irods::exception& _e) {
+                rodsLog(
+                   LOG_ERROR,
+                   "irods::get_index_and_resource_from_obj_inp failed for [%s]",
+                   obj_inp->objPath);
+            }
+        }
+        // uses the tracked file descriptor table operations to invoke policy
+        // if changes were actually made to the object
+        else if("pep_api_data_obj_close_pre"  == _rule_name ||
+                "pep_api_data_obj_close_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
+            }
+
+            const auto opened_inp = boost::any_cast<openedDataObjInp_t*>(*it);
+            const auto l1_idx = opened_inp->l1descInx;
+            auto jobj = objects_in_flight[l1_idx];
+
+            auto open_flags  = boost::lexical_cast<int>(std::string{jobj["open_flags"]});
+            bool write_flag  = (open_flags & O_WRONLY || open_flags & O_RDWR);
+            bool create_flag = (open_flags & O_CREAT);
+            bool trunc_flag  = (open_flags & O_TRUNC);
+
+            const auto event = [&]() -> const std::string {
+                if("CREATE" == hierarchy_resolution_operation) return "PUT";
+                else if("OPEN" == hierarchy_resolution_operation && write_flag) return "WRITE";
+                else if("OPEN" == hierarchy_resolution_operation && !write_flag) return "GET";
+                else return hierarchy_resolution_operation;
+            }();
+
+            jobj["policy_enforcement_point"] = _rule_name;
+            jobj["event"] = event;
+            jobj["comm"] = comm_obj;
+            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+
+            if(trunc_flag) {
+                jobj["event"] = "TRUNCATE";
                 invoke_policies_for_object(_rei, event, _rule_name, jobj);
             }
-            else if("pep_api_data_obj_lseek_pre"   == _rule_name ||
-                    "pep_api_data_obj_lseek_post"  == _rule_name) {
 
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                auto opened_inp = boost::any_cast<openedDataObjInp_t*>(*it);
-                const auto l1_idx = opened_inp->l1descInx;
-                auto jobj = objects_in_flight[l1_idx];
-
-                const std::string event = [&]() -> const std::string {
-                    const std::string& op = peps_to_events.at(_rule_name);
-                    return op;
-                }();
-
-                jobj["policy_enforcement_point"] = _rule_name;
-                jobj["event"] = event;
-                jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, jobj);
-
-            }
-            else if("pep_api_data_obj_copy_pre"  == _rule_name ||
-                    "pep_api_data_obj_copy_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                const std::string event = peps_to_events.at(_rule_name);
-                auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
-
-                auto src_jobj = irods::serialize_dataObjInp_to_json(copy_inp->srcDataObjInp);
-                src_jobj["policy_enforcement_point"] = _rule_name;
-                src_jobj["event"] = event;
-                src_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
-
-                auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
-                dst_jobj["policy_enforcement_point"] = _rule_name;
-                dst_jobj["event"] = event;
-                dst_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
-
-            }
-            else if("pep_api_data_obj_rename_pre"  == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                const std::string event = peps_to_events.at(_rule_name);
-                auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
-
-                auto src_jobj = irods::serialize_dataObjInp_to_json(copy_inp->srcDataObjInp);
-                src_jobj["policy_enforcement_point"] = _rule_name;
-                src_jobj["event"] = event;
-                src_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
-            }
-            else if("pep_api_data_obj_rename_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                const std::string event = peps_to_events.at(_rule_name);
-                auto copy_inp = boost::any_cast<dataObjCopyInp_t*>(*it);
-
-                auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
-                dst_jobj["policy_enforcement_point"] = _rule_name;
-                dst_jobj["event"] = event;
-                dst_jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
-            }
-            // uses the file descriptor table to track modify operations
-            // only add an entry if the object is created or opened for write
-            else if("pep_api_data_obj_open_pre"   == _rule_name ||
-                    "pep_api_data_obj_create_pre" == _rule_name ||
-                    "pep_api_data_obj_open_post"   == _rule_name ||
-                    "pep_api_data_obj_create_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
-
-                int l1_idx{};
-                json jobj{};
-                try {
-                    std::tie(l1_idx, jobj) = irods::get_index_and_json_from_obj_inp(obj_inp);
-                    objects_in_flight[l1_idx] = jobj;
-                }
-                catch(const irods::exception& _e) {
-                    rodsLog(
-                       LOG_ERROR,
-                       "irods::get_index_and_resource_from_obj_inp failed for [%s]",
-                       obj_inp->objPath);
-                }
-            }
-            // uses the tracked file descriptor table operations to invoke policy
-            // if changes were actually made to the object
-            else if("pep_api_data_obj_close_pre"  == _rule_name ||
-                    "pep_api_data_obj_close_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                const auto opened_inp = boost::any_cast<openedDataObjInp_t*>(*it);
-                const auto l1_idx = opened_inp->l1descInx;
-                auto jobj = objects_in_flight[l1_idx];
-
-                auto open_flags  = boost::lexical_cast<int>(std::string{jobj["open_flags"]});
-                bool write_flag  = (open_flags & O_WRONLY || open_flags & O_RDWR);
-                bool create_flag = (open_flags & O_CREAT);
-                bool trunc_flag  = (open_flags & O_TRUNC);
-
-                const auto event = [&]() -> const std::string {
-                    if("CREATE" == hierarchy_resolution_operation) return "PUT";
-                    else if("OPEN" == hierarchy_resolution_operation && write_flag) return "WRITE";
-                    else if("OPEN" == hierarchy_resolution_operation && !write_flag) return "GET";
-                    else return hierarchy_resolution_operation;
-                }();
-
-                jobj["policy_enforcement_point"] = _rule_name;
-                jobj["event"] = event;
-                jobj["comm"] = comm_obj;
-                invoke_policies_for_object(_rei, event, _rule_name, jobj);
-
-                if(trunc_flag) {
-                    jobj["event"] = "TRUNCATE";
-                    invoke_policies_for_object(_rei, event, _rule_name, jobj);
-                }
-
-            } // else if
-        }
-        catch(const std::invalid_argument& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const boost::bad_any_cast& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const boost::bad_lexical_cast& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const irods::exception& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-
+        } // else if
+        
     } // event_data_object_modified
 
 } // namespace
@@ -532,6 +511,15 @@ irods::error exec_rule(
                    SYS_NOT_SUPPORTED,
                    _e.what());
     }
+    catch(const boost::bad_lexical_cast& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
     catch(const boost::bad_any_cast& _e) {
         irods::exception_to_rerror(
             SYS_NOT_SUPPORTED,
@@ -544,6 +532,24 @@ irods::error exec_rule(
     catch(const irods::exception& _e) {
         irods::exception_to_rerror(
             _e,
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
+    catch(const std::exception& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
+    catch(const json::exception& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
             rei->rsComm->rError);
         return ERROR(
                    SYS_NOT_SUPPORTED,

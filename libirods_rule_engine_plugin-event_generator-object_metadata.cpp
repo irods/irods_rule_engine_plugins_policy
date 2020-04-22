@@ -47,8 +47,14 @@ namespace {
                 continue;
             }
 
-            auto object_metadata{fsvr::get_metadata(*comm, path)};
-            if(object_metadata.empty()) {
+            std::vector<fs::metadata> object_metadata{};
+            try {
+                object_metadata = fsvr::get_metadata(*comm, path);
+                if(object_metadata.empty()) {
+                    continue;
+                }
+            }
+            catch(...) {
                 continue;
             }
 

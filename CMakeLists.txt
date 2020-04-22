@@ -91,6 +91,7 @@ include(/usr/lib/irods/cmake/irods_policy_engine.cmake)
 
 include(${CMAKE_SOURCE_DIR}/access_time.cmake)
 include(${CMAKE_SOURCE_DIR}/query_processor.cmake)
+include(${CMAKE_SOURCE_DIR}/query_iterator.cmake)
 include(${CMAKE_SOURCE_DIR}/data_movement.cmake)
 include(${CMAKE_SOURCE_DIR}/data_replication.cmake)
 include(${CMAKE_SOURCE_DIR}/data_retention.cmake)

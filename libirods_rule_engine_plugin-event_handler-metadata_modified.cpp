@@ -144,37 +144,29 @@ namespace {
                             continue;
                         }
 
-                        try {
-                            json pam{}, cfg{};
+                        json pam{}, cfg{};
 
-                            if(policy.contains("parameters")) {
-                                pam = policy.at("parameters");
-                                pam.insert(_parameters.begin(), _parameters.end());
-                            }
-                            else {
-                                pam = _parameters;
-                            }
-
-                            if(policy.contains("configuration")) {
-                                cfg = policy["configuration"];
-                            }
-
-                            std::string pnm{policy["policy"]};
-                            std::string params{pam.dump()};
-                            std::string config{cfg.dump()};
-
-                            args.clear();
-                            args.push_back(boost::any(std::ref(params)));
-                            args.push_back(boost::any(std::ref(config)));
-
-                            irods::invoke_policy(_rei, pnm, args);
+                        if(policy.contains("parameters")) {
+                            pam = policy.at("parameters");
+                            pam.insert(_parameters.begin(), _parameters.end());
                         }
-                        catch(...) {
-                            rodsLog(
-                                LOG_ERROR,
-                                "caught exception in metadata event handler");
+                        else {
+                            pam = _parameters;
                         }
 
+                        if(policy.contains("configuration")) {
+                            cfg = policy["configuration"];
+                        }
+
+                        std::string pnm{policy["policy"]};
+                        std::string params{pam.dump()};
+                        std::string config{cfg.dump()};
+
+                        args.clear();
+                        args.push_back(boost::any(std::ref(params)));
+                        args.push_back(boost::any(std::ref(config)));
+
+                        irods::invoke_policy(_rei, pnm, args);
                     } // for ops
 
                 } // if suffix
@@ -213,60 +205,46 @@ namespace {
         ruleExecInfo_t*              _rei,
         const std::list<boost::any>& _arguments) {
 
-        try {
-            auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
 
-            if("pep_api_mod_avu_metadata_pre"  == _rule_name ||
-               "pep_api_mod_avu_metadata_post" == _rule_name) {
-                auto it = _arguments.begin();
-                std::advance(it, 2);
-                if(_arguments.end() == it) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        "invalid number of arguments");
-                }
-
-                const auto meta_inp{boost::any_cast<modAVUMetadataInp_t*>(*it)};
-                const auto event{peps_to_events.at(_rule_name)};
-                const auto entity_type = get_entity_type(meta_inp->arg1);
-
-                json jobj{};
-                jobj["event"] = event;
-                if(entity_type::data_object == entity_type ||
-                   entity_type::collection  == entity_type) {
-                    jobj["logical_path"] = meta_inp->arg2;
-                }
-                else if(entity_type::resource == entity_type) {
-                    jobj["source_resource"] = meta_inp->arg2;
-                }
-                else if(entity_type::user == entity_type) {
-                    jobj["user_name"] = meta_inp->arg2;
-                }
-
-                jobj["metadata"] = {
-                    {"operation",   meta_inp->arg0},
-                    {"entity_type", entity_type},
-                    {"attribute",   meta_inp->arg3},
-                    {"value",       meta_inp->arg4},
-                    {"units",       meta_inp->arg5}
-                };
-
-                jobj["policy_enforcement_point"] = _rule_name;
-
-                invoke_policies_for_object(_rei, event, _rule_name, jobj);
+        if("pep_api_mod_avu_metadata_pre"  == _rule_name ||
+           "pep_api_mod_avu_metadata_post" == _rule_name) {
+            auto it = _arguments.begin();
+            std::advance(it, 2);
+            if(_arguments.end() == it) {
+                THROW(
+                    SYS_INVALID_INPUT_PARAM,
+                    "invalid number of arguments");
             }
-        }
-        catch(const std::invalid_argument& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const boost::bad_any_cast& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const boost::bad_lexical_cast& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
-        }
-        catch(const irods::exception& _e) {
-            rodsLog(LOG_ERROR, "%s", _e.what());
+
+            const auto meta_inp{boost::any_cast<modAVUMetadataInp_t*>(*it)};
+            const auto event{peps_to_events.at(_rule_name)};
+            const auto entity_type = get_entity_type(meta_inp->arg1);
+
+            json jobj{};
+            jobj["event"] = event;
+            if(entity_type::data_object == entity_type ||
+               entity_type::collection  == entity_type) {
+                jobj["logical_path"] = meta_inp->arg2;
+            }
+            else if(entity_type::resource == entity_type) {
+                jobj["source_resource"] = meta_inp->arg2;
+            }
+            else if(entity_type::user == entity_type) {
+                jobj["user_name"] = meta_inp->arg2;
+            }
+
+            jobj["metadata"] = {
+                {"operation",   meta_inp->arg0},
+                {"entity_type", entity_type},
+                {"attribute",   meta_inp->arg3},
+                {"value",       meta_inp->arg4},
+                {"units",       meta_inp->arg5}
+            };
+
+            jobj["policy_enforcement_point"] = _rule_name;
+
+            invoke_policies_for_object(_rei, event, _rule_name, jobj);
         }
 
     } // event_metadata_modified
@@ -352,6 +330,15 @@ irods::error exec_rule(
                    SYS_NOT_SUPPORTED,
                    _e.what());
     }
+    catch(const boost::bad_lexical_cast& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
     catch(const boost::bad_any_cast& _e) {
         irods::exception_to_rerror(
             SYS_NOT_SUPPORTED,
@@ -369,7 +356,24 @@ irods::error exec_rule(
                    SYS_NOT_SUPPORTED,
                    _e.what());
     }
-
+    catch(const std::exception& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
+    catch(const json::exception& _e) {
+        irods::exception_to_rerror(
+            SYS_NOT_SUPPORTED,
+            _e.what(),
+            rei->rsComm->rError);
+        return ERROR(
+                   SYS_NOT_SUPPORTED,
+                   _e.what());
+    }
     // this code signals to the REPF that we were successfull but should continue
     // looking for further implementations of the same policy enforcement point
     return CODE(RULE_ENGINE_CONTINUE);
