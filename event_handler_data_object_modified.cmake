@@ -39,6 +39,7 @@ target_link_libraries(
     ${TARGET_NAME}
     PRIVATE
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
+    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     irods_common
     )
 

@@ -13,6 +13,7 @@
 #include "bulkDataObjReg.h"
 
 #include "boost/lexical_cast.hpp"
+#include "boost/regex.hpp"
 
 #include "policy_engine_utilities.hpp"
 
@@ -83,7 +84,7 @@ namespace {
         ruleExecInfo_t*    _rei,
         const std::string& _event,
         const std::string& _rule_name,
-        const json&        _obj_json) {
+        const json&        _parameters) {
         auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
 
         if(policies_to_invoke.empty()) {
@@ -104,6 +105,19 @@ namespace {
             for(auto& p : pre_post) {
                 std::string suffix{"_"}; suffix += p;
                 if(_rule_name.find(suffix) != std::string::npos) {
+
+                    // look for conditionals
+                    if(policy.contains("conditional")) {
+                        if(policy.at("conditional").contains("logical_path")) {
+                            auto cond_regex = boost::regex(policy.at("conditional").at("logical_path"));
+                            std::string event_path{_parameters.at("obj_path")};
+                            if(!boost::regex_match( event_path, cond_regex)) {
+                                continue;
+                            }
+                        }
+
+                    } // if conditional
+
                     auto ops = policy["events"];
                     for(auto& op : ops) {
 
@@ -120,10 +134,10 @@ namespace {
 
                         if(policy.contains("parameters")) {
                             pam = policy.at("parameters");
-                            pam.insert(_obj_json.begin(), _obj_json.end());
+                            pam.insert(_parameters.begin(), _parameters.end());
                         }
                         else {
-                            pam = _obj_json;
+                            pam = _parameters;
                         }
 
                         if(policy.contains("configuration")) {
@@ -226,21 +240,23 @@ namespace {
                 , bulk_inp->condInput);
         }
         // all PEPs use the same signature
-        else if("pep_api_data_obj_put_pre"     == _rule_name ||
-                "pep_api_data_obj_get_pre"     == _rule_name ||
-                "pep_api_data_obj_unlink_pre"  == _rule_name ||
-                "pep_api_data_obj_repl_pre"    == _rule_name ||
-                "pep_api_phy_path_reg_pre"     == _rule_name ||
-                "pep_api_data_obj_chksum_pre"  == _rule_name ||
-                "pep_api_data_obj_truncate_pre"== _rule_name ||
+        else if("pep_api_data_obj_put_pre"      == _rule_name ||
+                "pep_api_data_obj_get_pre"      == _rule_name ||
+                "pep_api_data_obj_unlink_pre"   == _rule_name ||
+                "pep_api_data_obj_repl_pre"     == _rule_name ||
+                "pep_api_phy_path_reg_pre"      == _rule_name ||
+                "pep_api_data_obj_chksum_pre"   == _rule_name ||
+                "pep_api_data_obj_truncate_pre" == _rule_name ||
+                "pep_api_data_obj_trim_pre"     == _rule_name ||
 
-                "pep_api_data_obj_put_post"    == _rule_name ||
-                "pep_api_data_obj_get_post"    == _rule_name ||
-                "pep_api_data_obj_unlink_post" == _rule_name ||
-                "pep_api_data_obj_repl_post"   == _rule_name ||
-                "pep_api_phy_path_reg_post"    == _rule_name ||
-                "pep_api_data_obj_truncate_pre"== _rule_name ||
-                "pep_api_data_obj_chksum_post" == _rule_name) {
+                "pep_api_data_obj_put_post"     == _rule_name ||
+                "pep_api_data_obj_get_post"     == _rule_name ||
+                "pep_api_data_obj_unlink_post"  == _rule_name ||
+                "pep_api_data_obj_repl_post"    == _rule_name ||
+                "pep_api_phy_path_reg_post"     == _rule_name ||
+                "pep_api_data_obj_truncate_pre" == _rule_name ||
+                "pep_api_data_obj_trim_post"    == _rule_name ||
+                "pep_api_data_obj_chksum_post"  == _rule_name) {
 
             auto it = _arguments.begin();
             std::advance(it, 2);
@@ -251,10 +267,11 @@ namespace {
             }
 
             auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
-            auto jobj = irods::serialize_dataObjInp_to_json(*obj_inp);
+            auto jobj    = irods::serialize_dataObjInp_to_json(*obj_inp);
 
             const std::string event = [&]() -> const std::string {
-                const std::string& op = peps_to_events.at(_rule_name);
+                std::string op = peps_to_events.at(_rule_name);
+                if(obj_inp->oprType == UNREG_OPR) { return "UNREGISTER"; }
                 return op;
             }();
 
@@ -419,7 +436,7 @@ namespace {
             }
 
         } // else if
-        
+
     } // event_data_object_modified
 
 } // namespace

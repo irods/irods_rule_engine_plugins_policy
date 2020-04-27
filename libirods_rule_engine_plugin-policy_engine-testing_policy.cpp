@@ -51,6 +51,9 @@ namespace {
         }
     } // entity_type_to_option
 
+    namespace fs   = irods::experimental::filesystem;
+    namespace fsvr = irods::experimental::filesystem::server;
+
     irods::error testing_policy(const pe::context& ctx)
     {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
@@ -93,8 +96,14 @@ namespace {
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
         else {
+            if(!fsvr::exists(*comm, logical_path)) {
+                logical_path = fs::path(logical_path).parent_path();
+            }
+
+            std::string op = fsvr::is_data_object(*comm, logical_path) ? "-d" : "-C";
+
             set_op.arg0 = "add";
-            set_op.arg1 = "-d";
+            set_op.arg1 = const_cast<char*>(op.c_str());
             set_op.arg2 = const_cast<char*>(logical_path.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
             set_op.arg4 = const_cast<char*>(event.c_str());

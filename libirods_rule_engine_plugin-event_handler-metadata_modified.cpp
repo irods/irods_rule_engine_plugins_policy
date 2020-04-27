@@ -131,6 +131,15 @@ namespace {
                             // need to use bracket syntax, creates objects if they do not exist
                             policy["parameters"]["conditional"]["metadata"] = _parameters["metadata"];
                         }
+
+                        if(policy.at("conditional").contains("logical_path")) {
+                            auto cond_regex = boost::regex(policy.at("conditional").at("logical_path"));
+                            std::string event_path{_parameters.at("obj_path")};
+                            if(!boost::regex_match( event_path, cond_regex)) {
+                                continue;
+                            }
+                        }
+
                     } // if conditional
 
                     auto ops = policy["events"];
