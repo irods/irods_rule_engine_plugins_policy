@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "json.hpp"
 
@@ -53,9 +54,7 @@ namespace {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
         std::tie(user_name, logical_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_first_resc);
+            capture_parameters(ctx.parameters, tag_first_resc);
 
         if(destination_resource.empty()) {
             irods::error err;

@@ -15,16 +15,8 @@ namespace irods {
     auto serialize_dataObjInp_to_json(const dataObjInp_t&) -> json;
     auto serialize_openedDataObjInp_to_json(const openedDataObjInp_t& _inp) -> json;
     auto serialize_rsComm_to_json(rsComm_t*) -> json;
+    void invoke_policies_for_object(
+            ruleExecInfo_t*, const std::string&, const std::string&, const json&, const json&);
 
-    namespace experimental::filesystem {
-        struct comparison_fields {
-            bool attribute;
-            bool value;
-            bool units;
-        };
-
-        auto compare_metadata(const metadata&,
-                              const metadata&,
-                              const comparison_fields&) -> bool;
-    };
+    auto evaluate_metadata_conditional(const json&, const json&) -> bool;
 } // namespace irods

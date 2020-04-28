@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "exec_as_user.hpp"
 #include "filesystem.hpp"
 #include "policy_engine_configuration_manager.hpp"
@@ -59,9 +60,7 @@ namespace {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
         std::tie(user_name, logical_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_first_resc);
+            capture_parameters(ctx.parameters, tag_first_resc);
 
         auto comm  = ctx.rei->rsComm;
         std::string event = ctx.parameters["event"];

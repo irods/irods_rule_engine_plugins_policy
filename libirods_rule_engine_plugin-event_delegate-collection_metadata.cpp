@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "event_handler_utilities.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "json.hpp"
@@ -11,50 +12,6 @@ namespace {
 
     using fsp  = fs::path;
     using json = nlohmann::json;
-
-    auto metadata_is_equivalent(
-          const json&                      metadata_to_compare
-        , const std::vector<fs::metadata>& filesystem_metadata) -> std::tuple<bool, fs::metadata>
-    {
-        std::string attribute, value, units;
-
-        if(metadata_to_compare.find("attribute") != metadata_to_compare.end()) {
-            attribute = metadata_to_compare["attribute"];
-        }
-
-        if(metadata_to_compare.find("value") != metadata_to_compare.end()) {
-            value = metadata_to_compare["value"];
-        }
-
-        if(metadata_to_compare.find("units") != metadata_to_compare.end()) {
-            units = metadata_to_compare["units"];
-        }
-
-        const fs::metadata mmd{
-              attribute
-            , value
-            , units
-        };
-
-        if(mmd.attribute.empty() && mmd.value.empty() && mmd.units.empty()) {
-            return std::make_tuple(false, fs::metadata{});
-        }
-
-        fs::comparison_fields fields {
-              mmd.attribute.size() > 0
-            , mmd.value.size()     > 0
-            , mmd.units.size()     > 0
-        };
-
-        for(const auto& fsmd : filesystem_metadata) {
-            if(fs::compare_metadata(mmd, fsmd, fields)) {
-                return std::make_tuple(true, fsmd);
-            }
-        }
-
-        return std::make_tuple(false, fs::metadata{});
-
-    } // metadata_is_equivalent
 
     irods::error event_delegate_collection_metadata(const pe::context& ctx)
     {
@@ -76,31 +33,20 @@ namespace {
 
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
         std::tie(user_name, logical_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_first_resc);
+            capture_parameters(ctx.parameters, tag_first_resc);
 
         const fsp root_path("/");
         for(auto& policy : policies_to_invoke) {
-            json policy_metadata{};
+            json conditional_metadata{};
 
             if(policy.contains("conditional") && policy.at("conditional").contains("metadata")) {
-                policy_metadata = policy.at("conditional").at("metadata");
+                conditional_metadata = policy.at("conditional").at("metadata");
             }
             else {
                 rodsLog(
                     LOG_ERROR,
                     "event_delegate-collection_metadata does not contain conditional metadata objects");
                 continue;
-            }
-
-            if(policy_metadata.contains("entity_type") &&
-               ctx.parameters.contains("metadata") &&
-               ctx.parameters.at("metadata").contains("entity_type")) {
-               if(policy_metadata.at("entity_type") !=
-                  ctx.parameters.at("metadata").at("entity_type")) {
-                   continue;
-               }
             }
 
             fsp current_path{logical_path};
@@ -118,10 +64,10 @@ namespace {
                     continue;
                 }
 
-                std::vector<fs::metadata> md{};
+                std::vector<fs::metadata> fsmd{};
                 try {
-                    md = fsvr::get_metadata(*comm, current_path);
-                    if(md.empty()) {
+                    fsmd = fsvr::get_metadata(*comm, current_path);
+                    if(fsmd.empty()) {
                         current_path = current_path.parent_path();
                         continue;
                     }
@@ -131,8 +77,20 @@ namespace {
                     continue;
                 }
 
-                bool ec{false}; fs::metadata fsmd{};
-                if(std::tie(ec, fsmd) = metadata_is_equivalent(policy_metadata, md); !ec) {
+                bool found_a_match{false};
+                fs::metadata matched_md{};
+                for(auto&& md : fsmd) {
+                    json obj = { {"attribute", md.attribute}
+                               , {"value",     md.value}
+                               , {"units",     md.units}};
+                    if(irods::evaluate_metadata_conditional(conditional_metadata, obj)) {
+                        found_a_match = true;
+                        matched_md = md;
+                        break;
+                    }
+                }
+
+                if(!found_a_match) {
                     current_path = current_path.parent_path();
                     continue;
                 }
@@ -149,9 +107,9 @@ namespace {
                 new_params["conditional"]["metadata"] = {
                     {"operation",   operation},
                     {"entity_type", entity_type},
-                    {"attribute",   fsmd.attribute},
-                    {"value",       fsmd.value},
-                    {"units",       fsmd.units}
+                    {"attribute",   matched_md.attribute},
+                    {"value",       matched_md.value},
+                    {"units",       matched_md.units}
                 };
 
                 std::string params{new_params.dump()};

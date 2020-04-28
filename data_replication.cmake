@@ -39,6 +39,7 @@ target_link_libraries(
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
     irods_common
+    irods_dev_policy_engine
     )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE ${IRODS_PLUGIN_POLICY_COMPILE_DEFINITIONS} ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)

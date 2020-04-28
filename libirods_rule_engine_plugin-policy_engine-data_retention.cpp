@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "exec_as_user.hpp"
 #include "irods_server_api_call.hpp"
 #include "apiNumber.h"
@@ -162,9 +163,7 @@ namespace {
         else {
             // event handler or direct call invocation
             std::tie(user_name, logical_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_first_resc);
+                extract_dataobj_inp_parameters(ctx.parameters, tag_first_resc);
         }
 
         auto err = SUCCESS();

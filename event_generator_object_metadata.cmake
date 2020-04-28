@@ -41,7 +41,9 @@ target_link_libraries(
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
+    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     irods_common
+    irods_dev_policy_engine
     pthread
     )
 

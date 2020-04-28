@@ -1,6 +1,6 @@
 
 #include "policy_engine.hpp"
-#include "filesystem.hpp"
+#include "policy_engine_parameter_capture.hpp"
 
 #include "irods_hierarchy_parser.hpp"
 #include "irods_server_api_call.hpp"
@@ -29,7 +29,6 @@ namespace {
 
         transferStat_t* trans_stat{};
 
-        //const auto repl_err = irods::server_api_call(DATA_OBJ_REPL_AN, _comm, &data_obj_inp, &trans_stat);
         auto repl_fcn = [&](auto& comm){
             auto ret = irods::server_api_call(DATA_OBJ_REPL_AN, _comm, &data_obj_inp, &trans_stat);
             free(trans_stat);
@@ -46,9 +45,7 @@ namespace {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
         std::tie(user_name, logical_path, source_resource, destination_resource) =
-            irods::capture_parameters(
-                  ctx.parameters
-                , irods::tag_first_resc);
+            capture_parameters(ctx.parameters, tag_first_resc);
 
         auto comm = ctx.rei->rsComm;
 
@@ -78,7 +75,7 @@ namespace {
                     % ctx.policy_name);
             }
 
-            destination_resource = irods::extract_object_parameter<std::string>("destination_resource", ctx.configuration);
+            destination_resource = extract_object_parameter<std::string>("destination_resource", ctx.configuration);
             if(!destination_resource.empty()) {
                 int err = replicate_object_to_resource(
                                 comm

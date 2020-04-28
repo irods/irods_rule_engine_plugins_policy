@@ -1,4 +1,5 @@
 
+#include "policy_engine_utilities.hpp"
 #include "irods_re_plugin.hpp"
 #include "irods_re_ruleexistshelper.hpp"
 #include "irods_plugin_context.hpp"
@@ -14,8 +15,6 @@
 
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
-
-#include "policy_engine_utilities.hpp"
 
 #include <typeinfo>
 #include <algorithm>
@@ -80,87 +79,6 @@ namespace {
 
     std::string hierarchy_resolution_operation{};
 
-    void invoke_policies_for_object(
-        ruleExecInfo_t*    _rei,
-        const std::string& _event,
-        const std::string& _rule_name,
-        const json&        _parameters) {
-        auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
-
-        if(policies_to_invoke.empty()) {
-            rodsLog(
-                LOG_ERROR,
-                "[%s] is missing configuration",
-                plugin_instance_name.c_str());
-            return;
-        }
-
-        std::list<boost::any> args;
-        for(auto& policy : policies_to_invoke) {
-            auto pre_post = policy["active_policy_clauses"];
-            if(pre_post.empty()) {
-                continue;
-            }
-
-            for(auto& p : pre_post) {
-                std::string suffix{"_"}; suffix += p;
-                if(_rule_name.find(suffix) != std::string::npos) {
-
-                    // look for conditionals
-                    if(policy.contains("conditional")) {
-                        if(policy.at("conditional").contains("logical_path")) {
-                            auto cond_regex = boost::regex(policy.at("conditional").at("logical_path"));
-                            std::string event_path{_parameters.at("obj_path")};
-                            if(!boost::regex_match( event_path, cond_regex)) {
-                                continue;
-                            }
-                        }
-
-                    } // if conditional
-
-                    auto ops = policy["events"];
-                    for(auto& op : ops) {
-
-                        std::string upper_operation{op};
-                        std::transform(upper_operation.begin(),
-                                       upper_operation.end(),
-                                       upper_operation.begin(),
-                                       ::toupper);
-                        if(upper_operation != _event) {
-                            continue;
-                        }
-
-                        json cfg{}, pam{};
-
-                        if(policy.contains("parameters")) {
-                            pam = policy.at("parameters");
-                            pam.insert(_parameters.begin(), _parameters.end());
-                        }
-                        else {
-                            pam = _parameters;
-                        }
-
-                        if(policy.contains("configuration")) {
-                            cfg = policy.at("configuration");
-                        }
-
-                        std::string pnm{policy["policy"]};
-                        std::string params{pam.dump()};
-                        std::string config{cfg.dump()};
-
-                        args.clear();
-                        args.push_back(boost::any(std::ref(params)));
-                        args.push_back(boost::any(std::ref(config)));
-
-                        irods::invoke_policy(_rei, pnm, args);
-
-                    } // for ops
-
-                } // if suffix
-            } // for pre_post
-        } // for policy
-    } // invoke_policies_for_object
-
     void seralize_bulk_put_object_parameters(
         ruleExecInfo_t*    _rei,
         const std::string& _rule_name,
@@ -196,7 +114,7 @@ namespace {
             jobj["policy_enforcement_point"] = _rule_name;
             jobj["event"] = event;
             jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, config->plugin_configuration.at("policies_to_invoke"), jobj);
 
         } // for i
 
@@ -208,6 +126,8 @@ namespace {
         const std::list<boost::any>& _arguments) {
 
         auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
+
+        auto policies_to_invoke = config->plugin_configuration.at("policies_to_invoke");
 
         if("pep_resource_resolve_hierarchy_pre"  == _rule_name ||
            "pep_resource_resolve_hierarchy_post" == _rule_name) {
@@ -278,7 +198,7 @@ namespace {
             jobj["policy_enforcement_point"] = _rule_name;
             jobj["event"] = event;
             jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, jobj);
         }
         else if("pep_api_data_obj_lseek_pre"   == _rule_name ||
                 "pep_api_data_obj_lseek_post"  == _rule_name) {
@@ -303,7 +223,7 @@ namespace {
             jobj["policy_enforcement_point"] = _rule_name;
             jobj["event"] = event;
             jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, jobj);
 
         }
         else if("pep_api_data_obj_copy_pre"  == _rule_name ||
@@ -323,13 +243,13 @@ namespace {
             src_jobj["policy_enforcement_point"] = _rule_name;
             src_jobj["event"] = event;
             src_jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, src_jobj);
 
             auto dst_jobj = irods::serialize_dataObjInp_to_json(copy_inp->destDataObjInp);
             dst_jobj["policy_enforcement_point"] = _rule_name;
             dst_jobj["event"] = event;
             dst_jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, dst_jobj);
 
         }
         else if("pep_api_data_obj_rename_pre"  == _rule_name) {
@@ -348,7 +268,7 @@ namespace {
             src_jobj["policy_enforcement_point"] = _rule_name;
             src_jobj["event"] = event;
             src_jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, src_jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, src_jobj);
         }
         else if("pep_api_data_obj_rename_post" == _rule_name) {
             auto it = _arguments.begin();
@@ -366,7 +286,7 @@ namespace {
             dst_jobj["policy_enforcement_point"] = _rule_name;
             dst_jobj["event"] = event;
             dst_jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, dst_jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, dst_jobj);
         }
         // uses the file descriptor table to track modify operations
         // only add an entry if the object is created or opened for write
@@ -428,11 +348,11 @@ namespace {
             jobj["policy_enforcement_point"] = _rule_name;
             jobj["event"] = event;
             jobj["comm"] = comm_obj;
-            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, jobj);
 
             if(trunc_flag) {
                 jobj["event"] = "TRUNCATE";
-                invoke_policies_for_object(_rei, event, _rule_name, jobj);
+                irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, jobj);
             }
 
         } // else if

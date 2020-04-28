@@ -1,5 +1,7 @@
 
 #include "event_handler_utilities.hpp"
+#include "policy_engine_utilities.hpp"
+#include "policy_engine_parameter_capture.hpp"
 
 #include "irods_resource_backport.hpp"
 
@@ -137,29 +139,193 @@ namespace irods {
 
     } // serialize_rsComm_ptr
 
-    namespace fs = irods::experimental::filesystem;
-    auto fs::compare_metadata(
-        const fs::metadata&          first,
-        const fs::metadata&          second,
-        const fs::comparison_fields& fields) -> bool
+    auto evaluate_metadata_conditional(
+          const json& cm           // conditional metadata
+        , const json& em) -> bool  // entity metadata
     {
-            bool equivalent{true};
+        if(cm.contains("entity_type") &&
+           em.contains("entity_type")) {
+           if(cm.at("entity_type") != em.at("entity_type")) {
+               return false;
+           }
+        }
 
-            if(fields.attribute) {
-                equivalent = equivalent && (first.attribute == second.attribute);
+        if(cm.contains("operation") &&
+           em.contains("operation")) {
+            bool found = false;
+            for(const auto op : cm.at("operation")) {
+                if(op == em.at("operation")) {
+                    found = true;
+                    break;
+                }
             }
 
-            if(fields.value) {
-                equivalent = equivalent && (first.value == second.value);
+            if(!found) {
+                return false;
+            }
+        }
+
+        namespace fs = irods::experimental::filesystem;
+
+        const fs::metadata cmd{
+              cm.contains("attribute") ? cm.at("attribute") : ""
+            , cm.contains("value")     ? cm.at("value")     : ""
+            , cm.contains("units")     ? cm.at("units")     : ""};
+
+        const fs::metadata emd{
+              em.contains("attribute") ? em.at("attribute") : ""
+            , em.contains("value")     ? em.at("value")     : ""
+            , em.contains("units")     ? em.at("units")     : ""};
+
+        if(cmd.attribute.empty() && cmd.value.empty() && cmd.units.empty()) {
+            return true;
+        }
+
+        bool match{true};
+
+        if(cmd.attribute.size() > 0) {
+            match = match && boost::regex_match(
+                                 emd.attribute,
+                                 boost::regex(cmd.attribute));
+        }
+
+        if(cmd.value.size() > 0) {
+            match = match && boost::regex_match(
+                                 emd.value,
+                                 boost::regex(cmd.value));
+        }
+
+        if(cmd.units.size() > 0) {
+            match = match && boost::regex_match(
+                                 emd.units,
+                                 boost::regex(cmd.units));
+        }
+
+        return match;
+
+    } // evaluate_metadata_conditional
+
+    static bool evaluate_conditionals(
+          const json& parameters
+        ,       json& policy)
+    {
+        // look for conditionals
+        if(policy.contains("conditional")) {
+            std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
+                capture_parameters(
+                      parameters
+                    , tag_first_resc);
+
+            if(policy.at("conditional").contains("metadata")) {
+                auto conditional_metadata = policy.at("conditional").at("metadata");
+                auto event_metadata = parameters.at("metadata");
+                if(!evaluate_metadata_conditional(
+                        conditional_metadata,
+                        event_metadata)) {
+                        return false;
+                }
+
+                // need to use bracket syntax, creates objects if they do not exist
+                policy.at("parameters").at("conditional").at("metadata") = parameters.at("metadata");
+            }
+            if(policy.at("conditional").contains("logical_path")) {
+                auto cond_regex = boost::regex(policy.at("conditional").at("logical_path"));
+                if(!boost::regex_match(logical_path, cond_regex)) {
+                    return false;
+                }
+            }
+            if(policy.at("conditional").contains("source_resource") &&
+               !source_resource.empty()) {
+                auto cond_regex = boost::regex(policy.at("conditional").at("source_resource"));
+                if(!boost::regex_match(source_resource, cond_regex)) {
+                    return false;
+                }
+            }
+            if(policy.at("conditional").contains("destination_resource") &&
+               !source_resource.empty()) {
+                auto cond_regex = boost::regex(policy.at("conditional").at("destination_resource"));
+                if(!boost::regex_match(destination_resource, cond_regex)) {
+                    return false;
+                }
+            }
+            if(policy.at("conditional").contains("user_name") &&
+               !user_name.empty()) {
+                auto cond_regex = boost::regex(policy.at("conditional").at("user_name"));
+                if(!boost::regex_match(user_name, cond_regex)) {
+                    return false;
+                }
             }
 
-            if(fields.units) {
-                equivalent = equivalent && (first.units == second.units);
+        } // if conditional
+
+        return true;
+
+    } // evaluate_conditionals
+
+    void invoke_policies_for_object(
+          ruleExecInfo_t*    rei
+        , const std::string& event
+        , const std::string& rule_name
+        , const json&        policies_to_invoke
+        , const json&        parameters) {
+
+        std::list<boost::any> args;
+        for(auto policy : policies_to_invoke) {
+            auto policy_clauses = policy["active_policy_clauses"];
+            if(policy_clauses.empty()) {
+                continue;
             }
 
-            return equivalent;
+            for(auto& clause : policy_clauses) {
+                std::string suffix{"_"}; suffix += clause;
+                if(rule_name.find(suffix) != std::string::npos) {
 
-    } // compare_metadata
+                    // look for conditionals
+                    if(!evaluate_conditionals(parameters, policy)) {
+                        continue;
+                    } // if conditional
+
+                    auto ops = policy["events"];
+                    for(auto& op : ops) {
+                        std::string upper_operation{op};
+                        std::transform(upper_operation.begin(),
+                                       upper_operation.end(),
+                                       upper_operation.begin(),
+                                       ::toupper);
+                        if(upper_operation != event) {
+                            continue;
+                        }
+
+                        json pam{}, cfg{};
+
+                        if(policy.contains("parameters")) {
+                            pam = policy.at("parameters");
+                            pam.insert(parameters.begin(), parameters.end());
+                        }
+                        else {
+                            pam = parameters;
+                        }
+
+                        if(policy.contains("configuration")) {
+                            cfg = policy["configuration"];
+                        }
+
+                        std::string pnm{policy["policy"]};
+                        std::string params{pam.dump()};
+                        std::string config{cfg.dump()};
+
+                        args.clear();
+                        args.push_back(boost::any(std::ref(params)));
+                        args.push_back(boost::any(std::ref(config)));
+
+                        invoke_policy(rei, pnm, args);
+                    } // for ops
+
+                } // if suffix
+            } // for pre_post
+        } // for policy
+    } // invoke_policies_for_object
 
 } // namespace irods
 

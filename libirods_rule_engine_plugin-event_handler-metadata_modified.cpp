@@ -3,6 +3,7 @@
 #include "irods_re_ruleexistshelper.hpp"
 #include "irods_plugin_context.hpp"
 #include "irods_hierarchy_parser.hpp"
+#include "policy_engine_utilities.hpp"
 #include "event_handler_utilities.hpp"
 #include "rule_engine_plugin_configuration_json.hpp"
 
@@ -12,8 +13,6 @@
 #include <boost/any.hpp>
 
 #include "boost/lexical_cast.hpp"
-
-#include "policy_engine_utilities.hpp"
 
 #include <typeinfo>
 #include <algorithm>
@@ -40,148 +39,6 @@ namespace {
         return (consumed_policy_enforcement_points.find(_rule_name) !=
                 consumed_policy_enforcement_points.end());
     } // rule_name_is_supported
-
-
-    auto metadata_is_equivalent(
-          const json& cm
-        , const json& em) -> bool
-    {
-        if(cm.contains("entity_type") &&
-           em.contains("entity_type")) {
-           if(cm.at("entity_type") != em.at("entity_type")) {
-               return false;
-           }
-        }
-        if(cm.contains("operation") &&
-           em.contains("operation")) {
-            bool found = false;
-            for(const auto op : cm.at("operation")) {
-                if(op == em.at("operation")) {
-                    found = true;
-                    break;
-                }
-            }
-
-            if(!found) {
-                return false;
-            }
-        }
-
-        const fs::metadata cmd{
-              cm.contains("attribute") ? cm["attribute"] : ""
-            , cm.contains("value")     ? cm["value"]     : ""
-            , cm.contains("units")     ? cm["units"]     : ""};
-
-        const fs::metadata emd{
-              em.contains("attribute") ? em["attribute"] : ""
-            , em.contains("value")     ? em["value"]     : ""
-            , em.contains("units")     ? em["units"]     : ""};
-
-        if(cmd.attribute.empty() && cmd.value.empty() && cmd.units.empty()) {
-            return true;
-        }
-
-        fs::comparison_fields fields {
-              cmd.attribute.size() > 0
-            , cmd.value.size()     > 0
-            , cmd.units.size()     > 0
-        };
-
-        return fs::compare_metadata(cmd, emd, fields);
-
-    } // metadata_is_equivalent
-
-    void invoke_policies_for_object(
-        ruleExecInfo_t*    _rei,
-        const std::string& _event,
-        const std::string& _rule_name,
-        const json&        _parameters) {
-
-        auto policies_to_invoke{config->plugin_configuration["policies_to_invoke"]};
-        if(policies_to_invoke.empty()) {
-            rodsLog(
-                LOG_ERROR,
-                "[%s] is missing configuration",
-                plugin_instance_name.c_str());
-            return;
-        }
-
-        std::list<boost::any> args;
-        for(auto& policy : policies_to_invoke) {
-            auto policy_clauses = policy["active_policy_clauses"];
-            if(policy_clauses.empty()) {
-                continue;
-            }
-
-            for(auto& clause : policy_clauses) {
-                std::string suffix{"_"}; suffix += clause;
-                if(_rule_name.find(suffix) != std::string::npos) {
-
-                    // look for conditionals
-                    if(policy.contains("conditional")) {
-                        if(policy.at("conditional").contains("metadata")) {
-                            auto conditional_metadata = policy.at("conditional").at("metadata");
-                            auto event_metadata = _parameters.at("metadata");
-                            if(!metadata_is_equivalent(
-                                    conditional_metadata,
-                                    event_metadata)) {
-                                    continue;
-                            }
-
-                            // need to use bracket syntax, creates objects if they do not exist
-                            policy["parameters"]["conditional"]["metadata"] = _parameters["metadata"];
-                        }
-
-                        if(policy.at("conditional").contains("logical_path")) {
-                            auto cond_regex = boost::regex(policy.at("conditional").at("logical_path"));
-                            std::string event_path{_parameters.at("obj_path")};
-                            if(!boost::regex_match( event_path, cond_regex)) {
-                                continue;
-                            }
-                        }
-
-                    } // if conditional
-
-                    auto ops = policy["events"];
-                    for(auto& op : ops) {
-                        std::string upper_operation{op};
-                        std::transform(upper_operation.begin(),
-                                       upper_operation.end(),
-                                       upper_operation.begin(),
-                                       ::toupper);
-                        if(upper_operation != _event) {
-                            continue;
-                        }
-
-                        json pam{}, cfg{};
-
-                        if(policy.contains("parameters")) {
-                            pam = policy.at("parameters");
-                            pam.insert(_parameters.begin(), _parameters.end());
-                        }
-                        else {
-                            pam = _parameters;
-                        }
-
-                        if(policy.contains("configuration")) {
-                            cfg = policy["configuration"];
-                        }
-
-                        std::string pnm{policy["policy"]};
-                        std::string params{pam.dump()};
-                        std::string config{cfg.dump()};
-
-                        args.clear();
-                        args.push_back(boost::any(std::ref(params)));
-                        args.push_back(boost::any(std::ref(config)));
-
-                        irods::invoke_policy(_rei, pnm, args);
-                    } // for ops
-
-                } // if suffix
-            } // for pre_post
-        } // for policy
-    } // invoke_policies_for_object
 
     namespace entity_type {
         inline const std::string data_object{"data_object"};
@@ -253,7 +110,9 @@ namespace {
 
             jobj["policy_enforcement_point"] = _rule_name;
 
-            invoke_policies_for_object(_rei, event, _rule_name, jobj);
+            auto policies_to_invoke = config->plugin_configuration.at("policies_to_invoke");
+
+            irods::invoke_policies_for_object(_rei, event, _rule_name, policies_to_invoke, jobj);
         }
 
     } // event_metadata_modified

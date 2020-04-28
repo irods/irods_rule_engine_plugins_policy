@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "policy_engine_configuration_manager.hpp"
 
 #include "irods_query.hpp"
@@ -51,19 +52,17 @@ namespace {
 
             // event handler or direct call invocation
             std::tie(user_name, logical_path, source_resource, destination_resource) =
-                irods::capture_parameters(
-                      ctx.parameters
-                    , irods::tag_first_resc);
+                capture_parameters(ctx.parameters, tag_first_resc);
 
             irods::error err;
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
-            auto number_of_threads{irods::extract_object_parameter<int>("number_of_threads", ctx.parameters)};
-            auto query_limit{irods::extract_object_parameter<int>("query_limit", ctx.parameters)};
-            auto query_type_string{irods::extract_object_parameter<std::string>("query_type", ctx.parameters)};
+            auto number_of_threads{extract_object_parameter<int>("number_of_threads", ctx.parameters)};
+            auto query_limit{extract_object_parameter<int>("query_limit", ctx.parameters)};
+            auto query_type_string{extract_object_parameter<std::string>("query_type", ctx.parameters)};
             auto query_type{irods::query<rsComm_t>::convert_string_to_query_type(query_type_string)};
-            auto query_string{irods::extract_object_parameter<std::string>("query_string", ctx.parameters)};
+            auto query_string{extract_object_parameter<std::string>("query_string", ctx.parameters)};
 
-            auto policy_to_invoke{irods::extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
+            auto policy_to_invoke{extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
 
             fs::path path{logical_path};
 

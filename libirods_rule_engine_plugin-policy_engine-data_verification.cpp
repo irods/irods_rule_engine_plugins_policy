@@ -1,5 +1,6 @@
 
 #include "policy_engine.hpp"
+#include "policy_engine_parameter_capture.hpp"
 #include "exec_as_user.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "data_verification_utilities.hpp"
@@ -24,16 +25,14 @@ namespace {
             std::string tmp_coll_name{}, tmp_data_name{};
 
             std::tie(user_name, tmp_coll_name, tmp_data_name, destination_resource) =
-                irods::extract_array_parameters<4, std::string>(ctx.parameters.at("query_results"));
+                extract_array_parameters<4, std::string>(ctx.parameters.at("query_results"));
 
             logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
         }
         else {
             // event handler or direct call invocation
             std::tie(user_name, logical_path, source_resource, destination_resource) =
-                irods::extract_dataobj_inp_parameters(
-                      ctx.parameters
-                    , irods::tag_first_resc);
+                extract_dataobj_inp_parameters(ctx.parameters, tag_first_resc);
         }
 
         if(source_resource.empty()) {
@@ -47,7 +46,7 @@ namespace {
 
         auto comm = ctx.rei->rsComm;
 
-        std::tie(verification_type, unit) = irods::get_metadata_for_resource(comm, attribute, destination_resource);
+        std::tie(verification_type, unit) = get_metadata_for_resource(comm, attribute, destination_resource);
 
         auto verif_fcn = [&](auto& comm) {
             return irods::verify_replica_for_destination_resource(
