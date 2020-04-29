@@ -59,11 +59,29 @@ namespace {
     {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
-        std::tie(user_name, logical_path, source_resource, destination_resource) =
-            capture_parameters(ctx.parameters, tag_first_resc);
+        if(ctx.parameters.contains("query_results")) {
+            using fsp = irods::experimental::filesystem::path;
+            std::string tmp_coll_name{}, tmp_data_name{};
+
+            auto query_results = ctx.parameters.at("query_results").get<std::vector<std::string>>();
+            user_name       = query_results[0];
+            tmp_coll_name   = query_results[1];
+            tmp_data_name   = query_results[2];
+            source_resource = query_results[3];
+
+            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
+        }
+        else {
+            std::tie(user_name, logical_path, source_resource, destination_resource) =
+                capture_parameters(ctx.parameters, tag_first_resc);
+        }
 
         auto comm  = ctx.rei->rsComm;
-        std::string event = ctx.parameters["event"];
+
+        std::string event{"unspecified"};
+        if(ctx.parameters.contains("event")) {
+            event = ctx.parameters.at("event");
+        }
 
         std::string entity_type, option, target;
         modAVUMetadataInp_t set_op{};

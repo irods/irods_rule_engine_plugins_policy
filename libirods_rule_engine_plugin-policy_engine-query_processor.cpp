@@ -8,6 +8,7 @@
 #include "query_processor.hpp"
 
 #include "json.hpp"
+#include "fmt/format.h"
 
 namespace {
     namespace pe   = irods::policy_engine;
@@ -48,12 +49,6 @@ namespace {
     irods::error query_processor_policy(const pe::context& ctx)
     {
         try {
-            std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
-
-            // event handler or direct call invocation
-            std::tie(user_name, logical_path, source_resource, destination_resource) =
-                capture_parameters(ctx.parameters, tag_first_resc);
-
             irods::error err;
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
             auto number_of_threads{extract_object_parameter<int>("number_of_threads", ctx.parameters)};
@@ -64,29 +59,57 @@ namespace {
 
             auto policy_to_invoke{extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
 
-            fs::path path{logical_path};
 
-            auto& comm = *ctx.rei->rsComm;
-            if(fsvr::is_collection(comm, path)) {
-                replace_query_string_token(query_string, tokens::collection_name, path.string());
+
+            if(ctx.parameters.contains("query_results")) {
+                auto query_results = ctx.parameters.at("query_results").get<std::vector<std::string>>();
+                std::string::size_type pos{};
+                for(auto& entry : query_results) {
+                    pos = query_string.find("'{}'", pos);
+                    if(pos != std::string::npos) {
+                        auto var = "'" + entry + "'";
+                        query_string.replace(pos, 4, var);
+                    }
+                }
+
             }
             else {
-                replace_query_string_token(query_string, tokens::collection_name, path.parent_path().string());
-                replace_query_string_token(query_string, tokens::data_name, path.object_name().string());
+                std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
+
+                // event handler or direct call invocation
+                std::tie(user_name, logical_path, source_resource, destination_resource) =
+                    capture_parameters(ctx.parameters, tag_first_resc);
+
+                fs::path path{logical_path};
+
+                auto& comm = *ctx.rei->rsComm;
+                if(fsvr::is_collection(comm, path)) {
+                    replace_query_string_token(query_string, tokens::collection_name, path.string());
+                }
+                else {
+                    replace_query_string_token(query_string, tokens::collection_name, path.parent_path().string());
+                    replace_query_string_token(query_string, tokens::data_name, path.object_name().string());
+                }
+
+                time_t lifetime;
+                std::tie(err, lifetime) = cfg_mgr.get_value("lifetime", 0);
+                replace_query_string_token(query_string, tokens::lifetime, std::time(nullptr) - lifetime);
+                replace_query_string_token(query_string, tokens::current_time, std::time(nullptr));
+
+                replace_query_string_token(query_string, tokens::source_resource_name, source_resource);
+                replace_query_string_token(query_string, tokens::destination_resource_name, destination_resource);
             }
-
-            time_t lifetime;
-            std::tie(err, lifetime) = cfg_mgr.get_value("lifetime", 0);
-            replace_query_string_token(query_string, tokens::lifetime, std::time(nullptr) - lifetime);
-            replace_query_string_token(query_string, tokens::current_time, std::time(nullptr));
-
-            replace_query_string_token(query_string, tokens::source_resource_name, source_resource);
-            replace_query_string_token(query_string, tokens::destination_resource_name, destination_resource);
 
             using json       = nlohmann::json;
             using result_row = irods::query_processor<rsComm_t>::result_row;
 
-            auto params_to_pass = ctx.parameters;
+            json params_to_pass{};
+            if(ctx.parameters.contains("parameters")) {
+                params_to_pass = ctx.parameters.at("parameters");
+            }
+            else {
+                params_to_pass = ctx.parameters;
+            }
 
             auto job = [&](const result_row& _results) {
                 auto res_arr = json::array();

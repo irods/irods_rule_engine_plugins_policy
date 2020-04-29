@@ -32,16 +32,18 @@ target_include_directories(
     ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${IRODS_EXTERNALS_FULLPATH_FMT}/include
     )
 
 target_link_libraries(
     ${TARGET_NAME}
     PRIVATE
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
     irods_common
     irods_dev_policy_engine
+    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
+    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
+    ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
     pthread
     )
 
@@ -54,6 +56,13 @@ install(
   ${TARGET_NAME}
   LIBRARY
   DESTINATION usr/lib/irods/plugins/rule_engines
+  COMPONENT ${IRODS_PACKAGE_COMPONENT_POLICY_NAME}
+  )
+
+install(
+  FILES
+  packaging/test_plugin_policy_engine-${POLICY_NAME}.py
+  DESTINATION var/lib/irods/scripts/irods/test
   COMPONENT ${IRODS_PACKAGE_COMPONENT_POLICY_NAME}
   )
 
