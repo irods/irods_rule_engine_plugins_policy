@@ -128,7 +128,7 @@ OUTPUT ruleExecOut"""
             "number_of_threads" : 1,
             "policy_to_invoke" : "irods_policy_query_processor",
             "parameters" : {
-                "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '{}' AND DATA_NAME = '{}'",
+                "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '{0}' AND DATA_NAME = '{1}'",
                 "query_limit" : 1,
                 "query_type" : "general",
                 "number_of_threads" : 1,

@@ -62,12 +62,13 @@ namespace {
 
             if(ctx.parameters.contains("query_results")) {
                 auto query_results = ctx.parameters.at("query_results").get<std::vector<std::string>>();
-                std::string::size_type pos{};
-                for(auto& entry : query_results) {
-                    pos = query_string.find("'{}'", pos);
-                    if(pos != std::string::npos) {
-                        auto var = "'" + entry + "'";
-                        query_string.replace(pos, 4, var);
+                for(auto i = 0; i < query_results.size(); ++i) {
+                    std::string::size_type pos{0};
+                    std::string token{"{"+std::to_string(i)+"}"};
+                    pos = query_string.find(token, pos);
+                    while(std::string::npos != pos) {
+                        query_string.replace(pos, token.size(), query_results[i]);
+                        pos = query_string.find(token, pos);
                     }
                 }
             }
