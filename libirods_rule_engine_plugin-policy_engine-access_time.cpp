@@ -4,6 +4,7 @@
 #include "exec_as_user.hpp"
 #include "filesystem.hpp"
 #include "policy_engine_configuration_manager.hpp"
+#include "irods_query.hpp"
 
 #include "rsModAVUMetadata.hpp"
 #include "rsOpenCollection.hpp"
@@ -71,40 +72,60 @@ namespace {
 
     using json = nlohmann::json;
 
+    auto get_user_name_for_data_object(
+        rsComm_t*         comm
+      , const std::string logical_path)
+    {
+        namespace fs   = irods::experimental::filesystem;
+        namespace fsvr = irods::experimental::filesystem::server;
+
+        fs::path p{logical_path};
+
+        auto data_name = p.object_name().string();
+        auto coll_name = p.parent_path().string();
+
+        auto str = std::string{"SELECT USER_NAME WHERE COLL_NAME = '"}+coll_name+"' AND DATA_NAME = '"+data_name+"'";
+        irods::query<rsComm_t> q{comm, str};
+        return q.front()[0];
+
+    } // get_user_name_for_data_object
+
+
+
+    auto get_user_name_for_collection(
+        rsComm_t*         comm
+      , const std::string logical_path)
+    {
+        auto str = std::string{"SELECT USER_NAME WHERE COLL_NAME = '"}+logical_path+"'";
+        irods::query<rsComm_t> q{comm, str};
+        return q.front()[0];
+
+    } // get_user_name_for_collection
+
+
+
     irods::error access_time_policy(const pe::context& ctx)
     {
 
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
+            capture_parameters(ctx.parameters, tag_first_resc);
 
         bool collection_operation = false;
 
-        auto [err, attribute] = cfg_mgr.get_value("attribute", "irods::access_time");
+        auto attribute = cfg_mgr.get("attribute", "irods::access_time");
 
         auto cond_input = ctx.parameters.contains("cond_input") ? ctx.parameters.at("cond_input") : json::object();
         collection_operation = !cond_input.empty() && !cond_input[COLLECTION_KW].empty();
 
-        // query processor invocation
-        if(ctx.parameters.contains("query_results")) {
-            using fsp = irods::experimental::filesystem::path;
-
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            std::tie(user_name, tmp_coll_name, tmp_data_name) =
-                extract_array_parameters<3, std::string>(ctx.parameters.at("query_results"));
-
-            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-        }
-        else {
-            // event handler or direct call invocation
-            std::tie(user_name, logical_path, source_resource, destination_resource) =
-                extract_dataobj_inp_parameters(ctx.parameters, tag_first_resc);
-        }
-
         auto comm = ctx.rei->rsComm;
 
         if(!collection_operation) {
+
+            user_name = get_user_name_for_data_object(comm, logical_path);
+
             int status =  update_access_time_for_data_object(comm, user_name, logical_path, attribute);
             if(status < 0) {
                 return ERROR(
@@ -114,6 +135,8 @@ namespace {
             }
         }
         else {
+            user_name = get_user_name_for_collection(comm, logical_path);
+
             // register a collection
             collInp_t coll_inp;
             memset(&coll_inp, 0, sizeof(coll_inp));

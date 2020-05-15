@@ -60,12 +60,12 @@ def query_iterator_configured(arg=None):
             pass
 
 
-class TestPolicyEngineQueryProcessor(ResourceBase, unittest.TestCase):
+class TestPolicyEngineQueryIterator(ResourceBase, unittest.TestCase):
     def setUp(self):
-        super(TestPolicyEngineQueryProcessor, self).setUp()
+        super(TestPolicyEngineQueryIterator, self).setUp()
 
     def tearDown(self):
-        super(TestPolicyEngineQueryProcessor, self).tearDown()
+        super(TestPolicyEngineQueryIterator, self).tearDown()
 
     def test_query_invocation(self):
         with session.make_session_for_existing_admin() as admin_session:
@@ -86,6 +86,46 @@ class TestPolicyEngineQueryProcessor(ResourceBase, unittest.TestCase):
               "query_limit" : 1,
               "query_type" : "general",
               "number_of_threads" : 1,
+              "policy_to_invoke" : "irods_policy_testing_policy",
+              "configuration" : {
+              }
+         }
+    }
+}
+INPUT null
+OUTPUT ruleExecOut"""
+
+                rule_file = tempfile.NamedTemporaryFile(mode='wt', dir='/tmp', delete=False).name + '.r'
+                with open(rule_file, 'w') as f:
+                    f.write(rule)
+
+                with query_iterator_configured():
+                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
+            finally:
+                admin_session.assert_icommand('irm -f ' + filename)
+                admin_session.assert_icommand('iadmin rum')
+
+    def test_query_invocation_with_default(self):
+        with session.make_session_for_existing_admin() as admin_session:
+            try:
+                filename = 'test_put_file'
+                lib.create_local_testfile(filename)
+                admin_session.assert_icommand('iput ' + filename)
+                admin_session.assert_icommand('ils -l', 'STDOUT_SINGLELINE', filename)
+                admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'None')
+
+                rule = """
+{
+    "policy" : "irods_policy_execute_rule",
+    "payload" : {
+        "policy_to_invoke" : "irods_policy_query_iterator",
+        "parameters" : {
+              "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'incorrect_file_name'",
+              "query_limit" : 1,
+              "query_type" : "general",
+              "number_of_threads" : 1,
+              "default_results_when_no_rows_found" : [["rods", "/tempZone/home/rods", "test_put_file", "demoResc"]],
               "policy_to_invoke" : "irods_policy_testing_policy",
               "configuration" : {
               }

@@ -51,20 +51,13 @@ namespace {
 
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
-
-        std::tie(user_name, logical_path, source_resource, destination_resource) =
+        auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
         if(destination_resource.empty()) {
-            irods::error err;
-            std::tie(err, destination_resource) = cfg_mgr.get_value(
-                                                      "destination_resource", "");
-            if(!err.ok()) {
-                std::tie(err, source_to_destination_map) =
-                    cfg_mgr.get_value(
-                        "source_to_destination_map",
-                        source_to_destination_map);
+            destination_resource = cfg_mgr.get("destination_resource", "");
+            if(destination_resource.empty()) {
+                auto source_to_destination_map = cfg_mgr.get("source_to_destination_map", json::array());
 
                 if(source_to_destination_map.empty()) {
                     return ERROR(
@@ -73,8 +66,7 @@ namespace {
                                % ctx.instance_name);
                 }
 
-                if(source_to_destination_map.find(source_resource) ==
-                   source_to_destination_map.end()) {
+                if(source_to_destination_map.find(source_resource) == source_to_destination_map.end()) {
                     return SUCCESS();
                 }
 

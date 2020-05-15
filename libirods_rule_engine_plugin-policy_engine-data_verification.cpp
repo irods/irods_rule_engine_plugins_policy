@@ -8,32 +8,29 @@
 namespace pe = irods::policy_engine;
 
 namespace {
+    namespace verification {
+        static const std::string catalog("catalog");
+        static const std::string filesystem("filesystem");
+        static const std::string checksum("checksum");
+    }
+
     irods::error data_verification_policy(const pe::context& ctx)
     {
+        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
+
+        if(log_actions) {
+            std::cout << "irods_policy_data_verification :: parameters " << ctx.parameters.dump(4) << "\n";
+        }
+
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{}, verification_type{}, unit{};
+        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{}, type{}, units{};
 
-        // may be within the configuration
-        irods::error err{};
-        std::tie(err, source_resource) = cfg_mgr.get_value("source_resource", "");
+        std::tie(user_name, logical_path, source_resource, destination_resource) =
+            capture_parameters(ctx.parameters, tag_first_resc);
 
-        // query processor invocation
-        if(ctx.parameters.contains("query_results")) {
-            using fsp = irods::experimental::filesystem::path;
-
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            std::tie(user_name, tmp_coll_name, tmp_data_name, destination_resource) =
-                extract_array_parameters<4, std::string>(ctx.parameters.at("query_results"));
-
-            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-        }
-        else {
-            // event handler or direct call invocation
-            std::tie(user_name, logical_path, source_resource, destination_resource) =
-                extract_dataobj_inp_parameters(ctx.parameters, tag_first_resc);
-        }
+        // may be statically configured
+        source_resource = cfg_mgr.get("source_resource", source_resource);
 
         if(source_resource.empty()) {
             return ERROR(
@@ -41,17 +38,25 @@ namespace {
                        "irods_policy_data_verification :: source_resource is not specified");
         }
 
-        std::string attribute{};
-        std::tie(err, attribute) = cfg_mgr.get_value("attribute", "irods::verification::type");
+        auto attribute = cfg_mgr.get("attribute", "irods::verification::type");
 
         auto comm = ctx.rei->rsComm;
 
-        std::tie(verification_type, unit) = get_metadata_for_resource(comm, attribute, destination_resource);
+        std::tie(type, units) = get_metadata_for_resource(comm, attribute, destination_resource);
+
+        if(type.empty()) {
+            type = verification::catalog;
+        }
+
+        if(log_actions) {
+            std::cout << "irods_policy_data_verification :: verifying " << logical_path
+                      << " with type " << type << " on resource " << destination_resource << "\n";
+        }
 
         auto verif_fcn = [&](auto& comm) {
             return irods::verify_replica_for_destination_resource(
                          &comm
-                       , verification_type
+                       , type
                        , logical_path
                        , source_resource
                        , destination_resource);};
@@ -65,7 +70,7 @@ namespace {
             return ERROR(
                     UNMATCHED_KEY_OR_INDEX,
                     boost::format("verification [%s] failed from [%s] to [%s]")
-                        % verification_type
+                        % type
                         % source_resource
                         % destination_resource);
         }

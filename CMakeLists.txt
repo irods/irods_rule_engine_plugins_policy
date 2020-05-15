@@ -97,10 +97,12 @@ include(${CMAKE_SOURCE_DIR}/data_replication.cmake)
 include(${CMAKE_SOURCE_DIR}/data_retention.cmake)
 include(${CMAKE_SOURCE_DIR}/data_verification.cmake)
 include(${CMAKE_SOURCE_DIR}/testing_policy.cmake)
+include(${CMAKE_SOURCE_DIR}/log_context.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_delegate_collection_metadata.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_generator_object_metadata.cmake)
+include(${CMAKE_SOURCE_DIR}/event_generator_resource_metadata.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_handler_data_object_modified.cmake)
 include(${CMAKE_SOURCE_DIR}/event_handler_metadata_modified.cmake)

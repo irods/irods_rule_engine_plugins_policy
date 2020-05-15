@@ -5,11 +5,42 @@
 #include "irods_hierarchy_parser.hpp"
 #include "irods_server_api_call.hpp"
 #include "exec_as_user.hpp"
+#include "parameter_substitution.hpp"
 
 #include "physPath.hpp"
 #include "apiNumber.h"
 
 namespace {
+
+    namespace pe = irods::policy_engine;
+
+    bool destination_replica_exists(
+        rsComm_t* comm
+      , const std::string& resource
+      , const std::string& logical_path)
+    {
+        namespace fs = irods::experimental::filesystem;
+
+        fs::path path{logical_path};
+        const auto coll_name = path.parent_path();
+        const auto data_name = path.object_name();
+
+        auto leaf_bundle = pe::compute_leaf_bundle(resource);
+
+        auto qstr{boost::str(boost::format(
+                  "SELECT DATA_REPL_NUM WHERE COLL_NAME = '%s' AND DATA_NAME = '%s' AND DATA_REPL_STATUS = '1' AND RESC_ID IN (%s)")
+                  % coll_name.string()
+                  % data_name.string()
+                  % leaf_bundle)};
+
+        irods::query qobj{comm, qstr};
+
+        return (qobj.size() > 0);
+
+    } // destination_replica_exists
+
+
+
     int replicate_object_to_resource(
           rsComm_t*          _comm
         , const std::string& _user_name
@@ -17,6 +48,11 @@ namespace {
         , const std::string& _source_resource
         , const std::string& _destination_resource)
     {
+
+        if(destination_replica_exists(_comm, _destination_resource, _logical_path)) {
+            return 0;
+        }
+
         dataObjInp_t data_obj_inp{};
         rstrcpy(data_obj_inp.objPath, _logical_path.c_str(), MAX_NAME_LEN);
         data_obj_inp.createMode = getDefFileMode();
@@ -38,10 +74,14 @@ namespace {
 
     } // replicate_object_to_resource
 
-    namespace pe = irods::policy_engine;
-
     irods::error replication_policy(const pe::context ctx)
     {
+        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
+
+        if(log_actions) {
+            std::cout << "irods_policy_data_replication :: parameters " << ctx.parameters.dump(4) << "\n";
+        }
+
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
         std::tie(user_name, logical_path, source_resource, destination_resource) =
@@ -50,6 +90,12 @@ namespace {
         auto comm = ctx.rei->rsComm;
 
         if(!destination_resource.empty()) {
+            if(log_actions) {
+                std::cout << "irods_policy_data_replication :: replicating ["
+                          << logical_path << " from [" << source_resource << "] to ["
+                          << destination_resource << "]\n";
+            }
+
             // direct call invocation
             int err = replicate_object_to_resource(
                             comm
@@ -77,6 +123,12 @@ namespace {
 
             destination_resource = extract_object_parameter<std::string>("destination_resource", ctx.configuration);
             if(!destination_resource.empty()) {
+                if(log_actions) {
+                    std::cout << "irods_policy_data_replication :: replicating ["
+                              << logical_path << " from [" << source_resource << "] to ["
+                              << destination_resource << "]\n";
+                }
+
                 int err = replicate_object_to_resource(
                                 comm
                               , user_name
@@ -106,7 +158,14 @@ namespace {
                 auto dst_resc_arr{src_dst_map.at(source_resource)};
                 auto destination_resources = dst_resc_arr.get<std::vector<std::string>>();
                 irods::error ret{SUCCESS()};
+
                 for( auto& dest : destination_resources) {
+                    if(log_actions) {
+                        std::cout << "irods_policy_data_replication :: replicating ["
+                                  << logical_path << " from [" << source_resource << "] to ["
+                                  << dest << "]\n";
+                    }
+
                     int err = replicate_object_to_resource(
                                     comm
                                   , user_name

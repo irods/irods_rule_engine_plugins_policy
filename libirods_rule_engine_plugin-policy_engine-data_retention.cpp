@@ -4,230 +4,318 @@
 
 #include "policy_engine.hpp"
 #include "policy_engine_parameter_capture.hpp"
+#include "parameter_substitution.hpp"
 #include "exec_as_user.hpp"
 #include "irods_server_api_call.hpp"
 #include "apiNumber.h"
 #include "policy_engine_configuration_manager.hpp"
+#include "irods_resource_manager.hpp"
+#include "irods_hierarchy_parser.hpp"
 
 #include "json.hpp"
+
+extern irods::resource_manager resc_mgr;
 
 namespace pe = irods::policy_engine;
 
 namespace {
+    using string_vector = std::vector<std::string>;
+    using string_tuple_vector = std::vector<std::tuple<std::string, std::string>>;
 
-    namespace mode {
+
+
+    namespace retention_mode {
         static const std::string remove_all{"remove_all_replicas"};
         static const std::string trim_single{"trim_single_replica"};
     };
 
+    bool mode_is_supported(const std::string& m)
+    {
+        return (m == retention_mode::remove_all || m == retention_mode::trim_single);
+    }
+
+
+
+    auto get_replica_number_for_resource(
+          rsComm_t*          comm
+        , const std::string& logical_path
+        , const std::string& source_resource)
+    {
+        namespace fs = irods::experimental::filesystem;
+
+        fs::path path{logical_path};
+        const auto coll_name = path.parent_path();
+        const auto data_name = path.object_name();
+
+        // query for list of all participating resources
+        auto qstr{boost::str(boost::format(
+                  "SELECT DATA_REPL_NUM WHERE COLL_NAME = '%s' AND DATA_NAME = '%s' AND RESC_NAME = '%s'")
+                  % coll_name.string()
+                  % data_name.string()
+                  % source_resource)};
+
+        irods::query qobj{comm, qstr};
+
+        return qobj.size() > 0 ? qobj.front()[0] : "INVALID_REPLICA_NUMBER";
+
+    } // get_replica_number_for_resource
+
+
+
     int remove_data_object(
-          int                _api_index
-        , rsComm_t*          _comm
-        , const std::string& _user_name
-        , const std::string& _logical_path
-        , const std::string& _source_resource = {})
+          int                api_index
+        , rsComm_t*          comm
+        , const std::string& user_name
+        , const std::string& logical_path
+        , const std::string& source_resource = {})
     {
         dataObjInp_t obj_inp{};
-        rstrcpy(
-              obj_inp.objPath
-            , _logical_path.c_str()
-            , sizeof(obj_inp.objPath));
+        memset(&obj_inp, 0, sizeof(obj_inp));
+        rstrcpy(obj_inp.objPath, logical_path.c_str(), sizeof(obj_inp.objPath));
 
-        addKeyVal(
-              &obj_inp.condInput
-            , COPIES_KW
-            , "1");
-
-        if(_comm->clientUser.authInfo.authFlag >= LOCAL_PRIV_USER_AUTH) {
-            addKeyVal(
-                  &obj_inp.condInput
-                , ADMIN_KW
-                , "true" );
+        if(comm->clientUser.authInfo.authFlag >= LOCAL_PRIV_USER_AUTH) {
+            addKeyVal(&obj_inp.condInput, ADMIN_KW, "true" );
         }
 
-        if(!_source_resource.empty()) {
-            addKeyVal(
-                  &obj_inp.condInput
-                , RESC_NAME_KW
-                , _source_resource.c_str());
+        addKeyVal(&obj_inp.condInput, COPIES_KW, "1" );
+
+        std::string hier{}, repl_num{};
+        if(!source_resource.empty()) {
+            repl_num = get_replica_number_for_resource(comm, logical_path, source_resource);
+            addKeyVal(&obj_inp.condInput, REPL_NUM_KW, repl_num.c_str());
+
+            irods::error err = resc_mgr.get_hier_to_root_for_resc(source_resource, hier);
+            addKeyVal(&obj_inp.condInput, RESC_HIER_STR_KW, hier.c_str());
         }
 
         auto trim_fcn = [&](auto& comm) {
-            return irods::server_api_call(_api_index, &comm, &obj_inp);
+            return irods::server_api_call(api_index, &comm, &obj_inp);
         };
 
-        return irods::exec_as_user(*_comm, _user_name, trim_fcn);
+        return irods::exec_as_user(*comm, user_name, trim_fcn);
 
     } // remove_data_object
 
 
 
-    // assumes _resources are sorted
-    std::tuple<bool, std::vector<std::string>>
-    participating_resources_without_preservation(
-          rsComm_t*          _comm
-        , const std::string& _attribute
-        , const std::string& _logical_path
-        , const std::string& _resource) {
-        using fsp = irods::experimental::filesystem::path;
+    auto get_leaf_resources_for_object(rsComm_t* comm, const std::string& logical_path)
+    {
+        namespace fs = irods::experimental::filesystem;
 
-        fsp path{_logical_path};
+        fs::path path{logical_path};
         const auto coll_name = path.parent_path();
         const auto data_name = path.object_name();
 
-        std::vector<std::string> all_resources{};
-        if(_resource.empty()) {
-            // query for list of all participating resources
-            auto qstr{boost::str(boost::format(
-                      "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s'")
-                      % coll_name.string()
-                      % data_name.string())};
+        // query for list of all participating resources
+        auto qstr{boost::str(boost::format(
+                  "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s'")
+                  % coll_name.string()
+                  % data_name.string())};
 
-            irods::query qobj{_comm, qstr};
+        irods::query qobj{comm, qstr};
 
-            // may get no results, early exit
-            if(qobj.size() <= 0) {
-                return std::make_tuple(false, all_resources);
-            }
-
-            for(auto r : qobj) {
-                all_resources.push_back(r[0]);
-            }
-        }
-        else {
-            all_resources.push_back(_resource);
+        string_vector resources{};
+        for(auto r : qobj) {
+            resources.push_back(r[0]);
         }
 
-        // query for list of participating resources which have the attribute
+        return resources;
+
+    } // get_leaf_resources_for_object
+
+
+
+    auto get_leaf_resource_for_root(
+        rsComm_t* comm
+      , const std::string& source_resource
+      , const std::string& logical_path)
+    {
+        namespace fs = irods::experimental::filesystem;
+
+        fs::path path{logical_path};
+        const auto coll_name = path.parent_path();
+        const auto data_name = path.object_name();
+
+        auto leaf_bundle = pe::compute_leaf_bundle(source_resource);
+
+        auto qstr{boost::str(boost::format(
+                  "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s' AND RESC_ID IN (%s)")
+                  % coll_name.string()
+                  % data_name.string()
+                  % leaf_bundle)};
+
+        irods::query qobj{comm, qstr};
+
+        return qobj.size() > 0 ? qobj.front()[0] : "EMPTY_RESC_NAME";
+
+    } // get_leaf_resource_for_root
+
+
+
+    auto get_root_resources_for_leaves(rsComm_t* comm, const string_vector& leaf_resources)
+    {
+        std::vector<std::tuple<std::string, std::string>> roots_and_leaves;
+        for(auto&& l : leaf_resources) {
+            std::string hier{};
+            irods::error err = resc_mgr.get_hier_to_root_for_resc(l, hier);
+
+            irods::hierarchy_parser p(hier);
+            roots_and_leaves.push_back(std::make_tuple(p.first_resc(), l));
+        }
+
+        return roots_and_leaves;
+
+    } // get_root_resources_for_leaves
+
+
+
+    auto filter_roots_and_leaves_by_whitelist(
+        const string_vector&       whitelist
+      , const string_tuple_vector& roots_and_leaves)
+    {
+        if(whitelist.empty()) {
+            return roots_and_leaves;
+        }
+
+        string_tuple_vector tmp{};
+        for(auto&& rl : roots_and_leaves) {
+            if(std::find(whitelist.begin(), whitelist.end(), std::get<0>(rl)) != whitelist.end()) {
+                tmp.push_back(rl);
+            }
+        }
+
+        return tmp;
+
+    } // filter_roots_and_leaves_by_whitelist
+
+
+
+    bool resource_has_preservation_metadata(
+          rsComm_t*            comm
+        , const std::string&   attribute
+        , const std::string&   resource)
+    {
         auto qstr = boost::str(boost::format(
-                    "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s' AND META_RESC_ATTR_NAME = '%s' AND RESC_NAME IN (")
-                    % coll_name.string()
-                    % data_name.string()
-                    % _attribute);
-        for(auto& r : all_resources) {
-            qstr += "'" + r + "', ";
+                    "SELECT META_RESC_ATTR_VALUE WHERE RESC_NAME = '%s' AND META_RESC_ATTR_NAME = '%s'")
+                    % resource
+                    % attribute);
+        irods::query qobj{comm, qstr};
+        
+        return qobj.size() != 0;
+
+    } // resource_has_preservation_metadata
+
+
+
+    auto filter_roots_and_leaves_by_preservation_metadata(
+          rsComm_t*                  comm
+        , const std::string&         attribute
+        , const string_tuple_vector& roots_and_leaves)
+    {
+        string_tuple_vector tmp{};
+        for(auto&& rl : roots_and_leaves) {
+            if(!resource_has_preservation_metadata(comm, attribute, std::get<0>(rl))) {
+                tmp.push_back(rl);
+            }
         }
-        qstr += ")";
 
-        std::vector<std::string> md_resources{};
+        return tmp;
 
-        irods::query md_qobj{_comm, qstr};
+    } // filter_roots_and_leaves_by_preservation_metadata
 
-        // may get no results, early exit
-        if(md_qobj.size() <= 0) {
-            return std::make_tuple(_resource.empty(), all_resources);
+
+
+    auto determine_resource_list_for_unlink(
+          rsComm_t*            comm
+        , const std::string&   attribute
+        , const std::string&   logical_path
+        , const string_vector& whitelist)
+    {
+        // need to convert leaves to roots and then determine if 
+        // 1. it is in the white list
+        // 2. if it has preservation metadata
+
+        auto leaf_resources = get_leaf_resources_for_object(comm, logical_path);
+        auto roots_and_leaves = get_root_resources_for_leaves(comm, leaf_resources);
+        roots_and_leaves = filter_roots_and_leaves_by_whitelist(whitelist, roots_and_leaves);
+        roots_and_leaves = filter_roots_and_leaves_by_preservation_metadata(comm, attribute, roots_and_leaves);
+
+        // gather remaining leaves
+        string_vector tmp{};
+        for(auto&& rl : roots_and_leaves) {
+            tmp.push_back(std::get<1>(rl));
         }
 
-        for(auto r : md_qobj) {
-            md_resources.push_back(r[0]);
+        // if identical to original list then we unlink, not trim
+        auto unlink = (leaf_resources == tmp);
+
+        return std::make_tuple(unlink, tmp);
+
+    } // determine_resource_list_for_unlink
+
+
+
+    auto object_can_be_trimmed(
+        rsComm_t*            comm
+      , const std::string&   attribute
+      , const std::string&   source_resource
+      , const string_vector& whitelist)
+    {
+        if(!whitelist.empty()) {
+            if(std::find(whitelist.begin(), whitelist.end(), source_resource) == whitelist.end()) {
+                return false;
+            }
         }
 
-        std::vector<std::string> final_resources{};
+        return !resource_has_preservation_metadata(comm, attribute, source_resource);
 
-        std::set_difference(
-              all_resources.begin()
-            , all_resources.end()
-            , md_resources.begin()
-            , md_resources.end()
-            , std::inserter(
-                final_resources
-              , final_resources.begin()));
-
-        return std::make_tuple(false, final_resources);
-
-    } // participating_resources_without_preservation
+    } // object_can_be_trimmed
 
 
 
     irods::error data_retention_policy(const pe::context& ctx)
     {
+        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
+
+        if(log_actions) {
+            std::cout << "irods_policy_data_retention :: parameters " << ctx.parameters.dump(4) << "\n";
+        }
+
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        std::string mode{}, user_name{}, logical_path{}, source_resource{}, destination_resource{}, attribute{};
-
-        // query processor invocation
-        if(ctx.parameters.contains("query_results")) {
-            using fsp = irods::experimental::filesystem::path;
-            std::string tmp_coll_name{}, tmp_data_name{};
-
-            auto results = ctx.parameters.at("query_results");
-            user_name     = results.at(0);
-            tmp_coll_name = results.at(1);
-            tmp_data_name = results.at(2);
-            if(results.size() > 3) {
-                source_resource = results.at(3);
-            }
-
-            logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
-        }
-        else {
-            // event handler or direct call invocation
-            std::tie(user_name, logical_path, source_resource, destination_resource) =
-                extract_dataobj_inp_parameters(ctx.parameters, tag_first_resc);
+        auto mode = cfg_mgr.get<std::string>("mode", "");
+        if(!mode_is_supported(mode)) {
+            return ERROR(SYS_INVALID_INPUT_PARAM,
+                         boost::format("retention mode is not supported [%s]")
+                         % mode);
         }
 
-        auto err = SUCCESS();
-        std::vector<std::string> resource_white_list{};
-        std::tie(err, resource_white_list) = cfg_mgr.get_value(
-                                                    "resource_white_list"
-                                                  , resource_white_list);
-        if(err.ok()) {
-            if(source_resource.empty()) {
-                return ERROR(
-                           SYS_INVALID_INPUT_PARAM
-                         , "resource whitelist provided with empty source resource");
-            }
+        auto [user_name, logical_path, source_resource, destination_resource] =
+            capture_parameters(ctx.parameters, tag_first_resc);
 
-            // white list provided, the source resource is matched
-            if(std::find(std::begin(resource_white_list)
-                       , std::end(resource_white_list)
-                       , source_resource) ==
-               std::end(resource_white_list)) {
-                return ERROR(
-                           SYS_INVALID_INPUT_PARAM,
-                           boost::format("source resource not matched [%s]")
-                           % source_resource);
-            }
-        }
+        auto whitelist = cfg_mgr.get("resource_white_list", json::array());
 
-        std::tie(err, attribute) = cfg_mgr.get_value(
-                                         "attribute"
-                                       , "irods::retention::preserve_replicas");
+        auto attribute = cfg_mgr.get("attribute", "irods::retention::preserve_replicas");
 
         auto comm = ctx.rei->rsComm;
 
-        auto [remove_all_replicas, resources_to_remove] =
-        participating_resources_without_preservation(
-              comm
-            , attribute
-            , logical_path
-            , source_resource);
+        if(mode == retention_mode::remove_all) {
+            auto [unlink, resources_to_remove] =
+            determine_resource_list_for_unlink(
+                  comm
+                , attribute
+                , logical_path
+                , whitelist);
 
-        // remove all replicas - requires a call to unlink, not trim
-        if(remove_all_replicas) {
-            const auto ret = remove_data_object(
-                                   DATA_OBJ_UNLINK_AN
-                                 , comm
-                                 , user_name
-                                 , logical_path);
-            if(ret < 0) {
-                 return ERROR(
-                           ret,
-                           boost::format("failed to remove [%s] from [%s]")
-                           % logical_path
-                           % source_resource);
-            }
+            // removing all replicas requires a call to unlink, cannot trim
+            if(unlink) {
+                if(log_actions) { std::cout << "irods_policy_data_retention :: unlinking [" << logical_path << "] as user [" << user_name << "]\n"; }
 
-        }
-        // trim a specific list of replicas
-        else {
-            for(const auto& src : resources_to_remove) {
                 const auto ret = remove_data_object(
-                                       DATA_OBJ_TRIM_AN
+                                       DATA_OBJ_UNLINK_AN
                                      , comm
                                      , user_name
-                                     , logical_path
-                                     , src);
+                                     , logical_path);
                 if(ret < 0) {
                      return ERROR(
                                ret,
@@ -235,7 +323,56 @@ namespace {
                                % logical_path
                                % source_resource);
                 }
-            } // for src
+
+            }
+            // trim a specific list of replicas determined by policy
+            else {
+                for(const auto& src : resources_to_remove) {
+                    if(log_actions) {
+                        std::cout << "irods_policy_data_retention :: trimming replica ["
+                                  << logical_path << "] from [" << src << "] as user [" << user_name << "]\n";
+                    
+                    }
+
+                    const auto ret = remove_data_object(
+                                           DATA_OBJ_TRIM_AN
+                                         , comm
+                                         , user_name
+                                         , logical_path
+                                         , src);
+                    if(ret < 0) {
+                         return ERROR(
+                                   ret,
+                                   boost::format("failed to remove [%s] from [%s]")
+                                   % logical_path
+                                   % src);
+                    }
+                } // for src
+            }
+        }
+        // trim single replica
+        else {
+            if(object_can_be_trimmed(comm, attribute, source_resource, whitelist)) {
+                auto leaf_name = get_leaf_resource_for_root(comm, source_resource, logical_path);
+                if(log_actions) {
+                    std::cout << "irods_policy_data_retention :: trimming single replica ["
+                              << logical_path << "] from [" << leaf_name << "] as user [" << user_name << "]\n";
+                }
+
+                const auto ret = remove_data_object(
+                                       DATA_OBJ_TRIM_AN
+                                     , comm
+                                     , user_name
+                                     , logical_path
+                                     , leaf_name);
+                if(ret < 0) {
+                     return ERROR(
+                               ret,
+                               boost::format("failed to remove [%s] from [%s]")
+                               % logical_path
+                               % source_resource);
+                }
+            }
         }
 
         return SUCCESS();

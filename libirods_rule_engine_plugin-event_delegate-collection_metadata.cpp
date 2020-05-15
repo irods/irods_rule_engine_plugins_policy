@@ -19,11 +19,7 @@ namespace {
 
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-        irods::error err{};
-        auto policies_to_invoke{json::array()};
-        std::tie(err, policies_to_invoke) = cfg_mgr.get_value(
-                                                  "policies_to_invoke"
-                                                , policies_to_invoke);
+        auto policies_to_invoke = cfg_mgr.get("policies_to_invoke", json::array());
         if(policies_to_invoke.empty()) {
             return ERROR(
                        SYS_INVALID_INPUT_PARAM,

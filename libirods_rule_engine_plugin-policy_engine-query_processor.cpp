@@ -3,6 +3,8 @@
 #include "policy_engine_parameter_capture.hpp"
 #include "policy_engine_configuration_manager.hpp"
 
+#include "parameter_substitution.hpp"
+
 #include "irods_query.hpp"
 #include "thread_pool.hpp"
 #include "query_processor.hpp"
@@ -15,115 +17,76 @@ namespace {
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
 
-    namespace tokens {
-            const std::string  current_time{"IRODS_TOKEN_CURRENT_TIME"};
-            const std::string  lifetime{"IRODS_TOKEN_LIFETIME"};
-            const std::string  collection_name{"IRODS_TOKEN_COLLECTION_NAME"};
-            const std::string  data_name{"IRODS_TOKEN_DATA_NAME"};
-            const std::string  source_resource_name{"IRODS_TOKEN_SOURCE_RESOURCE_NAME"};
-            const std::string  destination_resource_name{"IRODS_TOKEN_DESTINATION_RESOURCE_NAME"};
-    }; // tokens
-
-    void replace_query_string_token(std::string& query_string, const std::string token, const std::string& value)
-    {
-        std::string::size_type pos{0};
-        while(std::string::npos != pos) {
-            pos = query_string.find(token);
-            if(std::string::npos != pos) {
-                try {
-                    query_string.replace(pos, token.length(), value);
-                }
-                catch( const std::out_of_range& _e) {
-                }
-            }
-        }
-    } // replace_query_string_tokens
-
-    template<typename T>
-    void replace_query_string_token(std::string& query_string, const std::string token, T value)
-    {
-        auto value_string{std::to_string(value)};
-        replace_query_string_token(query_string, token, value_string);
-    } // replace_query_string_tokens
 
     irods::error query_processor_policy(const pe::context& ctx)
     {
         try {
-            irods::error err;
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
-            auto number_of_threads{extract_object_parameter<int>("number_of_threads", ctx.parameters)};
-            auto query_limit{extract_object_parameter<int>("query_limit", ctx.parameters)};
-            auto query_type_string{extract_object_parameter<std::string>("query_type", ctx.parameters)};
-            auto query_type{irods::query<rsComm_t>::convert_string_to_query_type(query_type_string)};
-            auto query_string{extract_object_parameter<std::string>("query_string", ctx.parameters)};
 
-            auto policy_to_invoke{extract_object_parameter<std::string>("policy_to_invoke", ctx.parameters)};
+            auto number_of_threads = cfg_mgr.get<int>("number_of_threads", 4);
+            auto query_limit = cfg_mgr.get<int>("query_limit", 0);
+            auto query_type_string = cfg_mgr.get<std::string>("query_type", "general");
 
+            auto query_type = irods::query<rsComm_t>::convert_string_to_query_type(query_type_string);
 
+            auto query_string = cfg_mgr.get<std::string>("query_string", "");
+            if(query_string.empty()) {
+                return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty query string");
+            }
+
+            auto policy_to_invoke = cfg_mgr.get<std::string>("policy_to_invoke", "");
+            if(policy_to_invoke.empty()) {
+                return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty policy_to_invoke");
+            }
 
             if(ctx.parameters.contains("query_results")) {
-                auto query_results = ctx.parameters.at("query_results").get<std::vector<std::string>>();
-                for(auto i = 0; i < query_results.size(); ++i) {
-                    std::string::size_type pos{0};
-                    std::string token{"{"+std::to_string(i)+"}"};
-                    pos = query_string.find(token, pos);
-                    while(std::string::npos != pos) {
-                        query_string.replace(pos, token.size(), query_results[i]);
-                        pos = query_string.find(token, pos);
-                    }
-                }
+                pe::replace_positional_tokens(
+                    query_string
+                  , ctx.parameters.at("query_results").get<std::vector<std::string>>());
             }
-            else {
-                std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
-                // event handler or direct call invocation
-                std::tie(user_name, logical_path, source_resource, destination_resource) =
-                    capture_parameters(ctx.parameters, tag_first_resc);
+            std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
+            std::tie(user_name, logical_path, source_resource, destination_resource) = capture_parameters(ctx.parameters, tag_first_resc);
 
-                fs::path path{logical_path};
+            auto& comm = *ctx.rei->rsComm;
 
-                auto& comm = *ctx.rei->rsComm;
-                if(fsvr::is_collection(comm, path)) {
-                    replace_query_string_token(query_string, tokens::collection_name, path.string());
+            auto [data_name, coll_name] = pe::split_logical_path(comm, logical_path);
+
+            std::vector<std::string> values = {std::to_string(std::time(nullptr)), "0", user_name, coll_name, data_name, source_resource, destination_resource};
+
+            time_t lifetime{};
+            if(ctx.configuration.contains("lifetime")) {
+                auto ltp = ctx.configuration.at("lifetime");
+                if(pe::paramter_requires_query_substitution(ltp)) {
+                    auto tmp = pe::perform_query_substitution<time_t>(comm, ltp, values);
+                    lifetime = std::time(nullptr) - tmp;
                 }
                 else {
-                    replace_query_string_token(query_string, tokens::collection_name, path.parent_path().string());
-                    replace_query_string_token(query_string, tokens::data_name, path.object_name().string());
+                    auto tmp = ctx.configuration.at("lifetime").get<time_t>();
+                    lifetime = std::time(nullptr) - tmp;
                 }
-
-                time_t lifetime;
-                std::tie(err, lifetime) = cfg_mgr.get_value("lifetime", 0);
-                replace_query_string_token(query_string, tokens::lifetime, std::time(nullptr) - lifetime);
-                replace_query_string_token(query_string, tokens::current_time, std::time(nullptr));
-
-                replace_query_string_token(query_string, tokens::source_resource_name, source_resource);
-                replace_query_string_token(query_string, tokens::destination_resource_name, destination_resource);
             }
+
+            values[1] = std::to_string(lifetime);
+
+            pe::parse_and_replace_query_string_tokens(query_string, values);
 
             using json       = nlohmann::json;
             using result_row = irods::query_processor<rsComm_t>::result_row;
 
-            json params_to_pass{};
-            if(ctx.parameters.contains("parameters")) {
-                params_to_pass = ctx.parameters.at("parameters");
-            }
-            else {
-                params_to_pass = ctx.parameters;
-            }
+            json params_to_pass{ctx.parameters};
 
             auto job = [&](const result_row& _results) {
                 auto res_arr = json::array();
                 for(auto& r : _results) {
                     res_arr.push_back(r);
                 }
-
                 params_to_pass["query_results"] = res_arr;
                 std::string params_str = params_to_pass.dump();
 
                 std::string config_str{};
-                if(ctx.parameters.find("configuration") !=
-                   ctx.parameters.end()) {
-                   config_str = ctx.parameters.at("configuration").dump();
+                if(ctx.configuration.contains("configuration")) {
+                   config_str = ctx.configuration.at("configuration").dump();
                 }
 
                 std::list<boost::any> arguments;
@@ -151,6 +114,32 @@ namespace {
                            "query processor encountered an error for [%d] rows for query [%s]")
                            % errors.size()
                            % query_string.c_str());
+            }
+
+            if(0 == qp.size() && ctx.configuration.contains("default_results_when_no_rows_found")) {
+                result_row res;
+                for(auto& r : ctx.configuration.at("default_results_when_no_rows_found")) {
+                    res.push_back(r.get<std::string>());
+                }
+
+                job(res);
+
+                if(errors.size() > 0) {
+                    for(auto& e : errors) {
+                        rodsLog(
+                            LOG_ERROR,
+                            "query failed [%d]::[%s]",
+                            std::get<0>(e),
+                            std::get<1>(e).c_str());
+                    }
+
+                    return ERROR(
+                               SYS_INVALID_OPR_TYPE,
+                               boost::format(
+                               "query processor encountered an error for [%d] rows for query [%s]")
+                               % errors.size()
+                               % query_string.c_str());
+                }
             }
         }
         catch(const irods::exception& e) {

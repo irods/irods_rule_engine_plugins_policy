@@ -45,6 +45,40 @@ namespace {
         replace_query_string_token(query_string, token, value_string);
     } // replace_query_string_tokens
 
+    void invoke_policy_for_row(
+          const pe::context&         ctx
+        , json                       params
+        , const std::string&         policy
+        , std::vector<irods::error>& errors)
+    {
+        try{
+            std::string params_str = params.dump();
+
+            std::string config_str{};
+            if(ctx.parameters.find("configuration") !=
+               ctx.parameters.end()) {
+               config_str = ctx.parameters.at("configuration").dump();
+            }
+
+            std::list<boost::any> arguments;
+            arguments.push_back(boost::any(std::ref(params_str)));
+            arguments.push_back(boost::any(std::ref(config_str)));
+            irods::invoke_policy(ctx.rei, policy, arguments);
+        }
+        catch(const irods::exception& e) {
+            errors.push_back(ERROR(e.code(), e.what()));
+        }
+        catch(const std::exception& e) {
+            errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
+        }
+        catch(const json::exception& e) {
+            errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
+        }
+        catch(...) {
+            errors.push_back(ERROR(SYS_INTERNAL_ERR, "unknown exception"));
+        }
+    }
+
     irods::error query_iterator_policy(const pe::context& ctx)
     {
         try {
@@ -89,8 +123,7 @@ namespace {
                     replace_query_string_token(query_string, tokens::data_name, path.object_name().string());
                 }
 
-                time_t lifetime;
-                std::tie(err, lifetime) = cfg_mgr.get_value("lifetime", 0);
+                time_t lifetime = cfg_mgr.get("lifetime", 0);
                 replace_query_string_token(query_string, tokens::lifetime, std::time(nullptr) - lifetime);
                 replace_query_string_token(query_string, tokens::current_time, std::time(nullptr));
 
@@ -111,41 +144,21 @@ namespace {
             std::vector<irods::error> errors{};
             irods::query<rsComm_t> qobj(comm, query_string, query_limit, 0, query_type);
 
-            for(auto&& row : qobj) {
-                try{
+            if(0 == qobj.size() && ctx.parameters.contains("default_results_when_no_rows_found")) {
+                for(auto&& r : ctx.parameters.at("default_results_when_no_rows_found")) {
+                    params_to_pass["query_results"] = r;
+                    invoke_policy_for_row(ctx, params_to_pass, policy_to_invoke, errors);
+                }
+            }
+            else {
+                for(auto&& row : qobj) {
                     auto res_arr = json::array();
-                    for(auto& r : row) {
-                        res_arr.push_back(r);
-                    }
+                    for(auto& r : row) {res_arr.push_back(r);}
 
                     params_to_pass["query_results"] = res_arr;
-                    std::string params_str = params_to_pass.dump();
-
-                    std::string config_str{};
-                    if(ctx.parameters.find("configuration") !=
-                       ctx.parameters.end()) {
-                       config_str = ctx.parameters.at("configuration").dump();
-                    }
-
-                    std::list<boost::any> arguments;
-                    arguments.push_back(boost::any(std::ref(params_str)));
-                    arguments.push_back(boost::any(std::ref(config_str)));
-                    irods::invoke_policy(ctx.rei, policy_to_invoke, arguments);
-                }
-                catch(const irods::exception& e) {
-                    errors.push_back(ERROR(e.code(), e.what()));
-                }
-                catch(const std::exception& e) {
-                    errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
-                }
-                catch(const json::exception& e) {
-                    errors.push_back(ERROR(SYS_INTERNAL_ERR, e.what()));
-                }
-                catch(...) {
-                    errors.push_back(ERROR(SYS_INTERNAL_ERR, "unknown exception"));
-                }
-
-            }; // for qobj
+                    invoke_policy_for_row(ctx, params_to_pass, policy_to_invoke, errors);
+                }; // for qobj
+            }
 
             if(errors.size() > 0) {
                 for(auto& e : errors) {
