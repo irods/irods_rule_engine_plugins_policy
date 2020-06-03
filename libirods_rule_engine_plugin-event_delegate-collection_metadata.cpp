@@ -33,10 +33,10 @@ namespace {
 
         const fsp root_path("/");
         for(auto& policy : policies_to_invoke) {
-            json conditional_metadata{};
+            json conditional{};
 
             if(policy.contains("conditional") && policy.at("conditional").contains("metadata")) {
-                conditional_metadata = policy.at("conditional").at("metadata");
+                conditional = policy.at("conditional").at("metadata");
             }
             else {
                 rodsLog(
@@ -79,7 +79,7 @@ namespace {
                     json obj = { {"attribute", md.attribute}
                                , {"value",     md.value}
                                , {"units",     md.units}};
-                    if(irods::evaluate_metadata_conditional(conditional_metadata, obj)) {
+                    if(irods::evaluate_metadata_conditional(conditional, obj)) {
                         found_a_match = true;
                         matched_md = md;
                         break;

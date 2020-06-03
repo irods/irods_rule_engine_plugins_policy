@@ -200,7 +200,7 @@ namespace {
                     % resource
                     % attribute);
         irods::query qobj{comm, qstr};
-        
+
         return qobj.size() != 0;
 
     } // resource_has_preservation_metadata
@@ -231,7 +231,7 @@ namespace {
         , const std::string&   logical_path
         , const string_vector& whitelist)
     {
-        // need to convert leaves to roots and then determine if 
+        // need to convert leaves to roots and then determine if
         // 1. it is in the white list
         // 2. if it has preservation metadata
 
@@ -331,7 +331,6 @@ namespace {
                     if(log_actions) {
                         std::cout << "irods_policy_data_retention :: trimming replica ["
                                   << logical_path << "] from [" << src << "] as user [" << user_name << "]\n";
-                    
                     }
 
                     const auto ret = remove_data_object(

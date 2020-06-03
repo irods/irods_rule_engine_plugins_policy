@@ -218,15 +218,12 @@ namespace irods {
                     , tag_first_resc);
 
             if(policy.at("conditional").contains("metadata")) {
-                auto conditional_metadata = policy.at("conditional").at("metadata");
-                auto event_metadata = parameters.at("metadata");
-                if(!evaluate_metadata_conditional(
-                        conditional_metadata,
-                        event_metadata)) {
+                auto cmd = policy.at("conditional").at("metadata");
+                auto emd = parameters.at("metadata");
+                if(!evaluate_metadata_conditional(cmd, emd)) {
                         return false;
                 }
 
-                // need to use bracket syntax, creates objects if they do not exist
                 policy.at("parameters").at("conditional").at("metadata") = parameters.at("metadata");
             }
             if(policy.at("conditional").contains("logical_path")) {
