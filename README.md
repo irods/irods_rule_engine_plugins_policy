@@ -183,7 +183,7 @@ The metadata modifed event handler reacts to the interaction of a client with th
     "user_name" : ""
 
 ```
-Where `logical_path`, `source_resource`, and `user_name` are optional depending on the target of the metadata operation.
+Where `logical_path`, `source_resource`, and `user_name` are optional depending on the target of the metadata operation.  `entity_type` may be one of `data_object`, `collection`, `resource` or `user`.
 
 # Policy Engines
 
@@ -191,7 +191,17 @@ The policy engine framework provides a set of utilities for the creation of ligh
 
 ## Query Processor
 
-The `irods_policy_query_processor` policy engine wraps the query_processor library within the iRODS development environment.  This policy engine will invoke a configured policy for every resulting row from the given query.
+The `irods_policy_query_processor` policy engine wraps the query_processor library within the iRODS development environment.  This policy engine will invoke a configured policy for every resulting row from the given query.  Each resulting row is passed to the invoked policy via the parameters as a JSON array `query_results`.  The data within the array arrives in the same order as the columns selected witin the query.
+
+```json
+"query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file'",
+"query_limit" : 1,
+"query_type" : "general",
+"number_of_threads" : 1,
+"policy_to_invoke" : "irods_policy_testing_policy",
+"configuration" : {
+}
+```
 
 
 
