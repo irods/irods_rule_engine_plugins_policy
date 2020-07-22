@@ -105,6 +105,7 @@ namespace {
             }
 
             jobj["metadata"] = {
+                {"comm",        comm_obj},
                 {"operation",   meta_inp->arg0},
                 {"entity_type", entity_type},
                 {"attribute",   meta_inp->arg3},
@@ -132,7 +133,7 @@ irods::error start(
 
     // load the plugin specific configuration for this instance
     config = std::make_unique<irods::plugin_configuration_json>(plugin_instance_name);
-
+#if 0
     // build a list of pep strings for the regexp
     std::string regex{};
     for( auto& s : consumed_policy_enforcement_points) {
@@ -143,7 +144,8 @@ irods::error start(
     regex = regex.substr(0, regex.size()-4);
 
     // register the event handler's peps as implemented by this plugin
-    //RuleExistsHelper::Instance()->registerRuleRegex(regex);
+    RuleExistsHelper::Instance()->registerRuleRegex(regex);
+#endif
     RuleExistsHelper::Instance()->registerRuleRegex("pep_api_.*");
 
     return SUCCESS();

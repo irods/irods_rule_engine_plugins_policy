@@ -47,6 +47,11 @@ namespace {
                 using fsp = irods::experimental::filesystem::path;
                 auto  lp  = fsp{coll_ent->collName} / fsp{coll_ent->dataName};
                 err = update_access_time_for_data_object(_comm, _user_name, lp.string(), _attribute);
+                if(err < 0) {
+                    rodsLog(LOG_NOTICE,
+                            "irods_policy_access_time :: failed to update access time for object [%s]",
+                            lp.string().c_str());
+                }
             }
             else if(COLL_OBJ_T == coll_ent->objType) {
                 collInp_t coll_inp;
@@ -73,8 +78,8 @@ namespace {
     using json = nlohmann::json;
 
     auto get_user_name_for_data_object(
-        rsComm_t*         comm
-      , const std::string logical_path)
+        rsComm_t*          comm
+      , const std::string& logical_path)
     {
         namespace fs   = irods::experimental::filesystem;
         namespace fsvr = irods::experimental::filesystem::server;
@@ -93,8 +98,8 @@ namespace {
 
 
     auto get_user_name_for_collection(
-        rsComm_t*         comm
-      , const std::string logical_path)
+        rsComm_t*          comm
+      , const std::string& logical_path)
     {
         auto str = std::string{"SELECT USER_NAME WHERE COLL_NAME = '"}+logical_path+"'";
         irods::query<rsComm_t> q{comm, str};

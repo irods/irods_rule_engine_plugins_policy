@@ -64,10 +64,10 @@ namespace {
             std::string tmp_coll_name{}, tmp_data_name{};
 
             auto query_results = ctx.parameters.at("query_results").get<std::vector<std::string>>();
-            user_name       = query_results[0];
+            //user_name       = query_results[0];
             tmp_coll_name   = query_results[1];
             tmp_data_name   = query_results[2];
-            source_resource = query_results[3];
+            //source_resource = query_results[3];
 
             logical_path = (fsp{tmp_coll_name} / fsp{tmp_data_name}).string();
         }

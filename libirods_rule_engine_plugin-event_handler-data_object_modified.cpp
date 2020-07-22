@@ -132,10 +132,11 @@ namespace {
         if("pep_resource_resolve_hierarchy_pre"  == _rule_name ||
            "pep_resource_resolve_hierarchy_post" == _rule_name) {
             auto it = _arguments.begin();
-            auto ins = boost::any_cast<std::string>(*it); ++it;
-            auto ctx = boost::any_cast<irods::plugin_context>(*it); ++it;
-            auto out = boost::any_cast<std::string*>(*it); ++it;
-            auto opr = boost::any_cast<const std::string*>(*it); ++it;
+            std::advance(it, 3);
+            //auto ins = boost::any_cast<std::string>(*it); ++it;
+            //auto ctx = boost::any_cast<irods::plugin_context>(*it); ++it;
+            //auto out = boost::any_cast<std::string*>(*it); ++it;
+            auto opr = boost::any_cast<const std::string*>(*it);// ++it;
             //auto hst = boost::any_cast<const std::string*>(*it); ++it;
             //auto prs = boost::any_cast<irods::hierarchy_parser*>(*it); ++it;
             //auto vte = boost::any_cast<float*>(*it); ++it;
@@ -304,9 +305,9 @@ namespace {
 
             auto obj_inp = boost::any_cast<dataObjInp_t*>(*it);
 
-            int l1_idx{};
-            json jobj{};
             try {
+                json jobj{};
+                int l1_idx{};
                 std::tie(l1_idx, jobj) = irods::get_index_and_json_from_obj_inp(obj_inp);
                 objects_in_flight[l1_idx] = jobj;
             }

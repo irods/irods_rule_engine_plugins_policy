@@ -68,7 +68,7 @@ namespace irods {
 
 
 
-        auto compute_leaf_bundle(const std::string resc_name)
+        auto compute_leaf_bundle(const std::string& resc_name)
         {
             std::string leaf_id_str;
 
@@ -181,7 +181,7 @@ namespace irods {
 
         void replace_query_string_token(
               std::string& query_string
-            , const std::string token
+            , const std::string& token
             , const std::string& value)
         {
             std::string tmp_val{value};
@@ -214,8 +214,8 @@ namespace irods {
         } // replace_query_string_tokens
 
         void replace_positional_tokens(
-             std::string&                   str
-           , const std::vector<std::string> results)
+             std::string&                    str
+           , const std::vector<std::string>& results)
         {
             for(auto i = 0; i < results.size(); ++i) {
                 std::string::size_type pos{0};

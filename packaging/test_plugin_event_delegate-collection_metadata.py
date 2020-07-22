@@ -1,12 +1,12 @@
-import os
-import sys
-import shutil
-import contextlib
-import tempfile
-import json
-import os.path
 
-from time import sleep
+import sys
+
+import contextlib
+
+
+
+
+
 
 if sys.version_info >= (2, 7):
     import unittest
@@ -16,12 +16,12 @@ else:
 from ..configuration import IrodsConfig
 from ..controller import IrodsController
 from .resource_suite import ResourceBase
-from ..test.command import assert_command
+
 from . import session
-from .. import test
+
 from .. import paths
 from .. import lib
-import ustrings
+
 
 @contextlib.contextmanager
 def object_event_handler_configured(arg=None):

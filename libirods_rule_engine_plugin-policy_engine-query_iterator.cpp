@@ -23,7 +23,7 @@ namespace {
             const std::string  destination_resource_name{"IRODS_TOKEN_DESTINATION_RESOURCE_NAME"};
     }; // tokens
 
-    void replace_query_string_token(std::string& query_string, const std::string token, const std::string& value)
+    void replace_query_string_token(std::string& query_string, const std::string& token, const std::string& value)
     {
         std::string::size_type pos{0};
         while(std::string::npos != pos) {
@@ -39,7 +39,7 @@ namespace {
     } // replace_query_string_tokens
 
     template<typename T>
-    void replace_query_string_token(std::string& query_string, const std::string token, T value)
+    void replace_query_string_token(std::string& query_string, const std::string& token, T value)
     {
         auto value_string{std::to_string(value)};
         replace_query_string_token(query_string, token, value_string);
