@@ -33,7 +33,9 @@ namespace {
     std::string plugin_instance_name{};
     std::set<std::string> consumed_policy_enforcement_points{
                                     "pep_api_mod_avu_metadata_pre",
-                                    "pep_api_mod_avu_metadata_post"};
+                                    "pep_api_mod_avu_metadata_post",
+                                    "pep_api_mod_avu_metadata_except",
+                                    "pep_api_mod_avu_metadata_finally"};
 
     auto rule_name_is_supported(const std::string& _rule_name) {
         return (consumed_policy_enforcement_points.find(_rule_name) !=
@@ -73,8 +75,10 @@ namespace {
 
         auto comm_obj = irods::serialize_rsComm_to_json(_rei->rsComm);
 
-        if("pep_api_mod_avu_metadata_pre"  == _rule_name ||
-           "pep_api_mod_avu_metadata_post" == _rule_name) {
+        if("pep_api_mod_avu_metadata_pre"     == _rule_name ||
+           "pep_api_mod_avu_metadata_post"    == _rule_name ||
+           "pep_api_mod_avu_metadata_except"  == _rule_name ||
+           "pep_api_mod_avu_metadata_finally" == _rule_name) {
             auto it = _arguments.begin();
             std::advance(it, 2);
             if(_arguments.end() == it) {
