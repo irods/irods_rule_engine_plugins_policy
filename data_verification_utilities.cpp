@@ -1,6 +1,4 @@
-
-
-
+#define  IRODS_QUERY_ENABLE_SERVER_SIDE_API
 #include "irods_query.hpp"
 #include "irods_resource_manager.hpp"
 #include "physPath.hpp"

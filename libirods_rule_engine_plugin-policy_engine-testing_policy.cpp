@@ -106,6 +106,7 @@ namespace {
 
             option = entity_type_to_option(entity_type);
             target = entity_type_to_target(entity_type, ctx.parameters);
+
             set_op.arg0 = "add";
             set_op.arg1 = const_cast<char*>(option.c_str());
             set_op.arg2 = const_cast<char*>(target.c_str());
@@ -113,15 +114,17 @@ namespace {
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
         else {
-            if(!fsvr::exists(*comm, logical_path)) {
-                logical_path = fs::path(logical_path).parent_path();
+            target = logical_path;
+
+            if(!fsvr::exists(*comm, target)) {
+                target = fs::path(target).parent_path();
             }
 
-            std::string op = fsvr::is_data_object(*comm, logical_path) ? "-d" : "-C";
+            option = fsvr::is_data_object(*comm, target) ? "-d" : "-C";
 
             set_op.arg0 = "add";
-            set_op.arg1 = const_cast<char*>(op.c_str());
-            set_op.arg2 = const_cast<char*>(logical_path.c_str());
+            set_op.arg1 = const_cast<char*>(option.c_str());
+            set_op.arg2 = const_cast<char*>(target.c_str());
             set_op.arg3 = "irods_policy_testing_policy";
             set_op.arg4 = const_cast<char*>(event.c_str());
         }
@@ -131,7 +134,7 @@ namespace {
             return ERROR(
                        status,
                        boost::format("Failed to invoke test_policy for [%s] with metadata [%s] [%s]")
-                       % logical_path
+                       % target
                        % "irods_testing_policy"
                        % event);
         }

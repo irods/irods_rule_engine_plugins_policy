@@ -22,7 +22,7 @@ add_library(
     ${TARGET_NAME}
     MODULE
     ${CMAKE_SOURCE_DIR}/lib${TARGET_NAME}.cpp
-    ${CMAKE_SOURCE_DIR}/event_handler_utilities.cpp
+    #    ${CMAKE_SOURCE_DIR}/event_handler_utilities.cpp
     )
 
 target_include_directories(
@@ -30,8 +30,8 @@ target_include_directories(
     PRIVATE
     ${IRODS_INCLUDE_DIRS}
     ${IRODS_EXTERNALS_FULLPATH_JSON}/include
-    ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
+    ${IRODS_EXTERNALS_FULLPATH_FMT}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
@@ -40,7 +40,8 @@ target_link_libraries(
     PRIVATE
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
     irods_common
-    irods_dev_policy_engine
+    irods_dev_event_handler
+    ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     )
 
