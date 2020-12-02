@@ -41,7 +41,7 @@ def event_handler_configured(arg=None):
                                 "logical_path" : "\/tempZone.*"
                             },
                             "active_policy_clauses" : ["post"],
-                            "events" : ["put", "get", "create", "read", "write", "rename", "register", "unregister", "replication", "checksum", "copy", "seek", "truncate"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "register", "unregister", "replication", "checksum", "copy", "seek", "truncate", "open", "close"],
                             "policy"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
@@ -196,8 +196,10 @@ class TestEventHandlerObjectModified(ResourceBase, unittest.TestCase):
             with event_handler_configured():
                 try:
                     admin_session.assert_icommand('imv ' + filename + ' ' + filename2)
+                    admin_session.assert_icommand('imeta ls -d /tempZone/home/rods', 'STDOUT_SINGLELINE', 'RENAME')
                     admin_session.assert_icommand('imeta ls -d ' + filename2, 'STDOUT_SINGLELINE', 'RENAME')
                 finally:
+                    admin_session.assert_icommand('imeta rm -C /tempZone/home/rods irods_policy_testing_policy RENAME')
                     admin_session.assert_icommand('irm -f ' + filename2)
 
 
