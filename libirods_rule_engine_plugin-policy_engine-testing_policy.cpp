@@ -106,14 +106,8 @@ namespace {
 
             option = entity_type_to_option(entity_type);
             target = entity_type_to_target(entity_type, ctx.parameters);
-
-            set_op.arg0 = "add";
-            set_op.arg1 = const_cast<char*>(option.c_str());
-            set_op.arg2 = const_cast<char*>(target.c_str());
-            set_op.arg3 = "irods_policy_testing_policy";
-            set_op.arg4 = const_cast<char*>(event.c_str());
         }
-        else {
+        else if(!logical_path.empty()) {
             target = logical_path;
 
             if(!fsvr::exists(*comm, target)) {
@@ -121,13 +115,21 @@ namespace {
             }
 
             option = fsvr::is_data_object(*comm, target) ? "-d" : "-C";
-
-            set_op.arg0 = "add";
-            set_op.arg1 = const_cast<char*>(option.c_str());
-            set_op.arg2 = const_cast<char*>(target.c_str());
-            set_op.arg3 = "irods_policy_testing_policy";
-            set_op.arg4 = const_cast<char*>(event.c_str());
         }
+        else if(!source_resource.empty()) {
+            target = (event == "REMOVE") ? "demoResc" : source_resource;
+            option = "-R";
+        }
+        else if(!user_name.empty()) {
+            target = (event == "REMOVE") ? "rods" : user_name;
+            option = "-u";
+        }
+
+        set_op.arg0 = "add";
+        set_op.arg1 = const_cast<char*>(option.c_str());
+        set_op.arg2 = const_cast<char*>(target.c_str());
+        set_op.arg3 = "irods_policy_testing_policy";
+        set_op.arg4 = const_cast<char*>(event.c_str());
 
         auto status = rsModAVUMetadata(comm, &set_op);
         if(status < 0) {
