@@ -106,5 +106,6 @@ include(${CMAKE_SOURCE_DIR}/event_generator_resource_metadata.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_handler_data_object_modified.cmake)
 include(${CMAKE_SOURCE_DIR}/event_handler_metadata_modified.cmake)
+include(${CMAKE_SOURCE_DIR}/event_handler_collection_modified.cmake)
 
 include(CPack)

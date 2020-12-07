@@ -12,9 +12,9 @@ namespace {
     // clang-format on
 
     auto metadata_modified(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> ie::handler_return_type
     {
         const std::string event{"METADATA"};
 
