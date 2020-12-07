@@ -37,52 +37,23 @@ namespace {
     namespace ie   = irods::event_handler;
     // clang-format on
 
-    auto pep_to_event(const std::string& _pep) -> std::string
-    {
-        const std::map<std::string, std::string> p2e {
-            { "bulk_data_obj_put",        "CREATE" },
-            { "data_obj_chksum",          "CHECKSUM" },
-            { "data_obj_copy",            "COPY" },
-            { "data_obj_create_and_stat", "CREATE" },
-            { "data_obj_create",          "CREATE" },
-            { "data_obj_get",             "GET" },
-            { "data_obj_lseek",           "SEEK" },
-            { "data_obj_phymv",           "REPLICATION" },
-            { "data_obj_put",             "PUT" },
-            { "data_obj_rename",          "RENAME" },
-            { "data_obj_repl",            "REPLICATION" },
-            { "data_obj_trim",            "TRIM" },
-            { "data_obj_truncate",        "TRUNCATE" },
-            { "data_obj_unlink",          "UNLINK" },
-            { "phy_path_reg",             "REGISTER" },
-        };
-
-        const auto prefix = std::string{"pep_api_"};
-
-        auto pos = _pep.find(prefix);
-        if(std::string::npos == pos) {
-            return "UNSUPPORTED";
-        }
-
-        auto tmp = _pep.substr(prefix.size());
-
-        pos = tmp.find_last_of("_");
-        if(std::string::npos == pos) {
-            return "UNSUPPORTED";
-        }
-
-        tmp = tmp.substr(0, pos);
-
-        try {
-            return p2e.at(tmp);
-        }
-        catch(const std::exception& _e) {
-            THROW(
-                SYS_INVALID_INPUT_PARAM,
-                fmt::format("failed to map event for pep {}", tmp));
-        }
-
-    } // pep_to_event
+    const std::map<std::string, std::string> p2e {
+        { "bulk_data_obj_put",        "CREATE" },
+        { "data_obj_chksum",          "CHECKSUM" },
+        { "data_obj_copy",            "COPY" },
+        { "data_obj_create_and_stat", "CREATE" },
+        { "data_obj_create",          "CREATE" },
+        { "data_obj_get",             "GET" },
+        { "data_obj_lseek",           "SEEK" },
+        { "data_obj_phymv",           "REPLICATION" },
+        { "data_obj_put",             "PUT" },
+        { "data_obj_rename",          "RENAME" },
+        { "data_obj_repl",            "REPLICATION" },
+        { "data_obj_trim",            "TRIM" },
+        { "data_obj_truncate",        "TRUNCATE" },
+        { "data_obj_unlink",          "UNLINK" },
+        { "phy_path_reg",             "REGISTER" },
+    };
 
     std::map<uint32_t, json> objects_in_flight{};
 
@@ -138,29 +109,12 @@ namespace {
 
     } // invoke_policy_for_bulk_put
 
-    auto advance_or_throw(
-        ie::arguments_type& _args
-      , uint32_t            _num)
-    {
-        auto it = _args.begin();
-
-        std::advance(it, _num);
-        if(_args.end() == it) {
-            THROW(
-                SYS_INVALID_INPUT_PARAM,
-                "invalid number of arguments");
-        }
-
-        return it;
-
-    } // advance_or_throw
-
     auto hierarchy_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto it = advance_or_throw(_arguments, 3);
+        auto it = ie::advance_or_throw(_arguments, 3);
         auto op = boost::any_cast<const std::string*>(*it);
         hierarchy_resolution_operation = *op;
 
@@ -169,11 +123,11 @@ namespace {
     } // hierarchy_handler
 
     auto bulk_put_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto it = advance_or_throw(_arguments, 2);
+        auto it = ie::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<bulkOprInp_t*>(*it);
         invoke_policy_for_bulk_put(
@@ -187,14 +141,14 @@ namespace {
     } // bulk_put_handler
 
     auto copy_rename_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = advance_or_throw(_arguments, 2);
+        auto it   = ie::advance_or_throw(_arguments, 2);
 
-        const std::string event = pep_to_event(_rule_name);
+        const std::string event = ie::pep_to_event(p2e, _rule_name);
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
@@ -217,19 +171,19 @@ namespace {
     } // copy_rename_handler
 
     auto seek_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = advance_or_throw(_arguments, 2);
+        auto it   = ie::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<openedDataObjInp_t*>(*it);
         const auto l1_idx = inp->l1descInx;
         auto obj = objects_in_flight[l1_idx];
 
         const std::string event = [&]() -> const std::string {
-            const std::string& op = pep_to_event(_rule_name);
+            const std::string& op = ie::pep_to_event(p2e, _rule_name);
             return op;
         }();
 
@@ -244,12 +198,12 @@ namespace {
     // uses the file descriptor table to track modify operations
     // only add an entry if the object is created or opened for write
     auto create_open_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = advance_or_throw(_arguments, 2);
+        auto it   = ie::advance_or_throw(_arguments, 2);
         auto inp  = boost::any_cast<dataObjInp_t*>(*it);
 
         json obj{};
@@ -277,12 +231,12 @@ namespace {
     // uses the tracked file descriptor table operations to invoke policy
     // if changes were actually made to the object
     auto close_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = advance_or_throw(_arguments, 2);
+        auto it   = ie::advance_or_throw(_arguments, 2);
 
         uint32_t l1_idx{};
         if(_rule_name.find("replica_close") != std::string::npos) {
@@ -318,18 +272,18 @@ namespace {
     } // close_handler
 
     auto data_obj_inp_handler(
-          const std::string&  _rule_name
-        , ie::arguments_type& _arguments
-        , ruleExecInfo_t*     _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const ie::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = advance_or_throw(_arguments, 2);
+        auto it   = ie::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<dataObjInp_t*>(*it);
         auto obj = ie::serialize_dataObjInp_to_json(*inp);
 
-        const std::string event = [&]() -> const std::string {
-            std::string op = pep_to_event(_rule_name);
+        const auto event = [&]() -> const std::string {
+            std::string op = ie::pep_to_event(p2e, _rule_name);
             if(inp->oprType == UNREG_OPR) { return "UNREGISTER"; }
             return op;
         }();
