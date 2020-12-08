@@ -40,7 +40,7 @@ target_link_libraries(
     PRIVATE
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
     irods_common
-    irods_dev_policy_engine
+    irods_dev_policy_composition_framework
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
     ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so

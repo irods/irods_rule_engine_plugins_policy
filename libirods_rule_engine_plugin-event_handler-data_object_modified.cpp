@@ -1,28 +1,7 @@
 
-#include "event_handler.hpp"
+#include "policy_composition_framework_event_handler.hpp"
 
 #include "fmt/format.h"
-
-/*
-#include "policy_engine_utilities.hpp"
-#include "irods_re_plugin.hpp"
-#include "irods_re_ruleexistshelper.hpp"
-#include "irods_plugin_context.hpp"
-#include "irods_hierarchy_parser.hpp"
-#include "event_handler_utilities.hpp"
-#include "rule_engine_plugin_configuration_json.hpp"
-#include "rcMisc.h"
-
-#include <boost/any.hpp>
-
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
-
-#include <typeinfo>
-#include <algorithm>
-
-#include "json.hpp"
-*/
 
 #include "objDesc.hpp"
 #include "physPath.hpp"
@@ -35,6 +14,7 @@ namespace {
     // clang-format off
     using     json = nlohmann::json;
     namespace ie   = irods::event_handler;
+    namespace ipc  = irods::policy_composition;
     // clang-format on
 
     const std::map<std::string, std::string> p2e {
@@ -68,7 +48,7 @@ namespace {
 
         const std::string event{hierarchy_resolution_operation};
 
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
 
         auto data_name = getSqlResultByInx(&_attr_arr, COL_DATA_NAME);
         if(!data_name) {
@@ -95,7 +75,7 @@ namespace {
 
             inp.dataSize = i==0 ? offset_int[0] : offset_int[i]-offset_int[i-1];
 
-            auto obj = ie::serialize_dataObjInp_to_json(inp);
+            auto obj = ipc::serialize_dataObjInp_to_json(inp);
 
             obj["policy_enforcement_point"] = _rule_name;
             obj["event"] = event;
@@ -103,18 +83,18 @@ namespace {
 
             auto p2i = ie::configuration->plugin_configuration.at("policies_to_invoke");
 
-            ie::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
+            ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
 
         } // for i
 
     } // invoke_policy_for_bulk_put
 
     auto hierarchy_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto it = ie::advance_or_throw(_arguments, 3);
+        auto it = ipc::advance_or_throw(_arguments, 3);
         auto op = boost::any_cast<const std::string*>(*it);
         hierarchy_resolution_operation = *op;
 
@@ -123,11 +103,11 @@ namespace {
     } // hierarchy_handler
 
     auto bulk_put_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto it = ie::advance_or_throw(_arguments, 2);
+        auto it = ipc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<bulkOprInp_t*>(*it);
         invoke_policy_for_bulk_put(
@@ -141,49 +121,49 @@ namespace {
     } // bulk_put_handler
 
     auto copy_rename_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ie::advance_or_throw(_arguments, 2);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = ipc::advance_or_throw(_arguments, 2);
 
-        const std::string event = ie::pep_to_event(p2e, _rule_name);
+        const std::string event = ipc::pep_to_event(p2e, _rule_name);
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
         auto p2i = ie::configuration->plugin_configuration.at("policies_to_invoke");
 
-        json src = ie::serialize_dataObjInp_to_json(inp->srcDataObjInp);
+        json src = ipc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
         src["policy_enforcement_point"] = _rule_name;
         src["event"] = event;
         src["comm"]  = comm;
-        ie::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
+        ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
 
-        json dst = ie::serialize_dataObjInp_to_json(inp->destDataObjInp);
+        json dst = ipc::serialize_dataObjInp_to_json(inp->destDataObjInp);
         dst["policy_enforcement_point"] = _rule_name;
         dst["event"] = event;
         dst["comm"]  = comm;
-        ie::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
+        ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
 
         return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
 
     } // copy_rename_handler
 
     auto seek_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ie::advance_or_throw(_arguments, 2);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = ipc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<openedDataObjInp_t*>(*it);
         const auto l1_idx = inp->l1descInx;
         auto obj = objects_in_flight[l1_idx];
 
         const std::string event = [&]() -> const std::string {
-            const std::string& op = ie::pep_to_event(p2e, _rule_name);
+            const std::string& op = ipc::pep_to_event(p2e, _rule_name);
             return op;
         }();
 
@@ -198,18 +178,18 @@ namespace {
     // uses the file descriptor table to track modify operations
     // only add an entry if the object is created or opened for write
     auto create_open_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ie::advance_or_throw(_arguments, 2);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = ipc::advance_or_throw(_arguments, 2);
         auto inp  = boost::any_cast<dataObjInp_t*>(*it);
 
         json obj{};
         try {
             int l1_idx{};
-            std::tie(l1_idx, obj) = ie::get_index_and_json_from_obj_inp(inp);
+            std::tie(l1_idx, obj) = ipc::get_index_and_json_from_obj_inp(inp);
             objects_in_flight[l1_idx] = obj;
         }
         catch(const irods::exception& _e) {
@@ -231,12 +211,12 @@ namespace {
     // uses the tracked file descriptor table operations to invoke policy
     // if changes were actually made to the object
     auto close_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ie::advance_or_throw(_arguments, 2);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = ipc::advance_or_throw(_arguments, 2);
 
         uint32_t l1_idx{};
         if(_rule_name.find("replica_close") != std::string::npos) {
@@ -272,18 +252,18 @@ namespace {
     } // close_handler
 
     auto data_obj_inp_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ie::advance_or_throw(_arguments, 2);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = ipc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<dataObjInp_t*>(*it);
-        auto obj = ie::serialize_dataObjInp_to_json(*inp);
+        auto obj = ipc::serialize_dataObjInp_to_json(*inp);
 
         const auto event = [&]() -> const std::string {
-            std::string op = ie::pep_to_event(p2e, _rule_name);
+            std::string op = ipc::pep_to_event(p2e, _rule_name);
             if(inp->oprType == UNREG_OPR) { return "UNREGISTER"; }
             return op;
         }();

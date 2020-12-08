@@ -1,18 +1,21 @@
 
-#include "policy_engine.hpp"
-#include "policy_engine_parameter_capture.hpp"
-#include "policy_engine_configuration_manager.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
+#include "policy_composition_framework_parameter_capture.hpp"
+#include "policy_composition_framework_configuration_manager.hpp"
 
-#include "irods_query.hpp"
 #include "thread_pool.hpp"
 
 #include "json.hpp"
 #include "fmt/format.h"
 
 namespace {
+
+    // clang-format off
     namespace pe   = irods::policy_engine;
+    namespace ipc  = irods::policy_composition;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
+    // clang-format off
 
     namespace tokens {
             const std::string  current_time{"IRODS_TOKEN_CURRENT_TIME"};
@@ -63,7 +66,7 @@ namespace {
             std::list<boost::any> arguments;
             arguments.push_back(boost::any(std::ref(params_str)));
             arguments.push_back(boost::any(std::ref(config_str)));
-            irods::invoke_policy(ctx.rei, policy, arguments);
+            ipc::invoke_policy(ctx.rei, policy, arguments);
         }
         catch(const irods::exception& e) {
             errors.push_back(ERROR(e.code(), e.what()));
@@ -182,7 +185,7 @@ namespace {
                 // if nothing of interest is found, thats not an error
             }
             else {
-                irods::exception_to_rerror(
+                ipc::exception_to_rerror(
                     e, ctx.rei->rsComm->rError);
                 return ERROR(
                           e.code(),

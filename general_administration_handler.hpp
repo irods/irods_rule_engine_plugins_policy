@@ -1,36 +1,37 @@
 #ifndef IRODS_GENERAL_ADMINISTRATION_HANDLER_HPP
 #define IRODS_GENERAL_ADMINISTRATION_HANDLER_HPP
 
-#include "event_handler.hpp"
+#include "policy_composition_framework_event_handler.hpp"
 
 namespace {
     // clang-format off
     using     json = nlohmann::json;
     namespace ie   = irods::event_handler;
+    namespace ipc  = irods::policy_composition;
     // clang-format on
 
-    const ie::event_map_type p2e{
+    const ipc::event_map_type p2e{
         {"add",    "CREATE"},
         {"modify", "MODIFY"},
         {"rm",     "REMOVE"}
     };
 
-    const ie::event_map_type a2k{
+    const ipc::event_map_type a2k{
         {"user",     "user_name"},
         {"resource", "source_resource"},
         {"zone",     "zone"}
     };
 
     auto general_administration_handler(
-          const std::string&        _target
-        , const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> ie::handler_return_type
+          const std::string&         _target
+        , const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> ie::handler_return_type
     {
-        auto it = ie::advance_or_throw(_arguments, 2);
+        auto it = ipc::advance_or_throw(_arguments, 2);
 
         const auto inp{boost::any_cast<generalAdminInp_t*>(*it)};
-        auto obj = ie::serialize_generalAdminInp_to_json(*inp);
+        auto obj = ipc::serialize_generalAdminInp_to_json(*inp);
 
         if(_target != obj["target"]) {
             return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
@@ -42,7 +43,7 @@ namespace {
 
         obj["policy_enforcement_point"] = _rule_name;
         obj["event"] = event;
-        obj["comm"]  = ie::serialize_rsComm_to_json(_rei->rsComm);
+        obj["comm"]  = ipc::serialize_rsComm_to_json(_rei->rsComm);
 
         return std::make_tuple(event, obj);
 

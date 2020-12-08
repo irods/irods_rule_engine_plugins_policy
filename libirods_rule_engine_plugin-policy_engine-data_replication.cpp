@@ -1,6 +1,6 @@
 
-#include "policy_engine.hpp"
-#include "policy_engine_parameter_capture.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
+#include "policy_composition_framework_parameter_capture.hpp"
 
 #include "irods_hierarchy_parser.hpp"
 #include "irods_server_api_call.hpp"

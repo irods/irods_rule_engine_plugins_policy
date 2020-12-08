@@ -38,12 +38,11 @@ target_include_directories(
 target_link_libraries(
     ${TARGET_NAME}
     PRIVATE
-    irods_dev_event_handler
+    irods_dev_policy_composition_framework
     ${IRODS_PLUGIN_POLICY_LINK_LIBRARIES}
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
     irods_common
-    irods_dev_policy_engine
     )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE ${IRODS_PLUGIN_POLICY_COMPILE_DEFINITIONS} ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)

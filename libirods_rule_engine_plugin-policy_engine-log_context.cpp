@@ -1,9 +1,9 @@
 
-#include "policy_engine.hpp"
-#include "policy_engine_parameter_capture.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
+#include "policy_composition_framework_parameter_capture.hpp"
 #include "exec_as_user.hpp"
 #include "filesystem.hpp"
-#include "policy_engine_configuration_manager.hpp"
+#include "policy_composition_framework_configuration_manager.hpp"
 
 #include "rsModAVUMetadata.hpp"
 #include "rsOpenCollection.hpp"
