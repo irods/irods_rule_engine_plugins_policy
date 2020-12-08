@@ -21,7 +21,6 @@ set(
 add_library(
     ${TARGET_NAME}
     MODULE
-    event_handler_utilities.cpp
     ${CMAKE_SOURCE_DIR}/lib${TARGET_NAME}.cpp
     )
 

@@ -1,7 +1,6 @@
 
 #include "policy_engine.hpp"
 #include "policy_engine_parameter_capture.hpp"
-#include "event_handler_utilities.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "parameter_substitution.hpp"
 

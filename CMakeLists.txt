@@ -82,7 +82,7 @@ set(CPACK_RPM_PACKAGE_AUTOPROV 0)
 
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 
-include(/usr/lib/irods/cmake/irods_policy_engine.cmake)
+include(/usr/lib/irods/cmake/policy_composition_framework_cmake_utilities.cmake)
 
 # CPACK names component package files as "${CPACK_PACKAGE_FILE_NAME}-${COMPONENT_NAME}"
 # CPackDeb TO_UPPERs all the component names when checking the ${CPACK_DEBIAN_<COMPONENT>...} variables
@@ -99,10 +99,9 @@ include(${CMAKE_SOURCE_DIR}/data_verification.cmake)
 include(${CMAKE_SOURCE_DIR}/testing_policy.cmake)
 include(${CMAKE_SOURCE_DIR}/log_context.cmake)
 
-include(${CMAKE_SOURCE_DIR}/event_delegate_collection_metadata.cmake)
-
-include(${CMAKE_SOURCE_DIR}/event_generator_object_metadata.cmake)
-include(${CMAKE_SOURCE_DIR}/event_generator_resource_metadata.cmake)
+#include(${CMAKE_SOURCE_DIR}/event_delegate_collection_metadata.cmake)
+#include(${CMAKE_SOURCE_DIR}/event_generator_object_metadata.cmake)
+#include(${CMAKE_SOURCE_DIR}/event_generator_resource_metadata.cmake)
 
 include(${CMAKE_SOURCE_DIR}/event_handler_data_object_modified.cmake)
 include(${CMAKE_SOURCE_DIR}/event_handler_metadata_modified.cmake)

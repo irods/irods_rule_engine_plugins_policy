@@ -3,9 +3,9 @@
 namespace {
 
     auto user_handler(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> ie::handler_return_type
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> ie::handler_return_type
     {
         return general_administration_handler("user", _rule_name, _arguments, _rei);
     } // user_handler

@@ -2,13 +2,13 @@
 #include <algorithm>
 #include <iostream>
 
-#include "policy_engine.hpp"
-#include "policy_engine_parameter_capture.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
+#include "policy_composition_framework_parameter_capture.hpp"
 #include "parameter_substitution.hpp"
 #include "exec_as_user.hpp"
 #include "irods_server_api_call.hpp"
 #include "apiNumber.h"
-#include "policy_engine_configuration_manager.hpp"
+#include "policy_composition_framework_configuration_manager.hpp"
 #include "irods_resource_manager.hpp"
 #include "irods_hierarchy_parser.hpp"
 

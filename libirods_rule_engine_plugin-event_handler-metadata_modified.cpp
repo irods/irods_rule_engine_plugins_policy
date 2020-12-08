@@ -1,20 +1,22 @@
-#include "event_handler.hpp"
 
 #define IRODS_METADATA_ENABLE_SERVER_SIDE_API
 #include "metadata.hpp"
+
+#include "policy_composition_framework_event_handler.hpp"
 
 namespace {
 
     // clang-format off
     using     json = nlohmann::json;
     namespace ie   = irods::event_handler;
+    namespace ipc  = irods::policy_composition;
     namespace ixm  = irods::experimental::metadata;
     // clang-format on
 
     auto metadata_modified(
-          const std::string&        _rule_name
-        , const ie::arguments_type& _arguments
-        , ruleExecInfo_t*           _rei) -> ie::handler_return_type
+          const std::string&         _rule_name
+        , const ipc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> ie::handler_return_type
     {
         const std::string event{"METADATA"};
 
@@ -25,7 +27,7 @@ namespace {
             , {ixm::entity_type::resource,    "source_resource"}
         };
 
-        auto comm = ie::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
 
         auto it = _arguments.begin();
         std::advance(it, 2);

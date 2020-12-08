@@ -21,7 +21,6 @@ set(
 add_library(
     ${TARGET_NAME}
     MODULE
-    event_handler_utilities.cpp
     ${CMAKE_SOURCE_DIR}/lib${TARGET_NAME}.cpp
     )
 
@@ -43,7 +42,7 @@ target_link_libraries(
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
     irods_common
-    irods_dev_policy_engine
+    irods_dev_policy_composition_framework
     pthread
     )
 

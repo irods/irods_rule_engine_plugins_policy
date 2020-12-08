@@ -43,7 +43,7 @@ target_link_libraries(
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
     ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
     irods_common
-    irods_dev_policy_engine
+    irods_dev_policy_composition_framework
     pthread
     )
 

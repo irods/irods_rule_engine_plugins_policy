@@ -1,12 +1,16 @@
 
-#include "policy_engine.hpp"
-#include "policy_engine_parameter_capture.hpp"
-#include "policy_engine_configuration_manager.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
+#include "policy_composition_framework_parameter_capture.hpp"
+#include "policy_composition_framework_configuration_manager.hpp"
 #include "json.hpp"
 
-namespace pe = irods::policy_engine;
-
 namespace {
+
+    // clang-format off
+    namespace pe  = irods::policy_engine;
+    namespace ipc = irods::policy_composition;
+    // clang-format on
+
     using invoke_policy_type = std::function<void(ruleExecInfo_t*, const std::string&, std::list<boost::any>)>;
 
     void apply_data_replication_policy(
@@ -17,7 +21,7 @@ namespace {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
-        irods::invoke_policy(_rei, "irods_policy_data_replication", args);
+        ipc::invoke_policy(_rei, "irods_policy_data_replication", args);
 
     } // apply_data_replication_policy
 
@@ -29,7 +33,7 @@ namespace {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
-        irods::invoke_policy(_rei, "irods_policy_data_verification", args);
+        ipc::invoke_policy(_rei, "irods_policy_data_verification", args);
 
     } // apply_data_verification_policy
 
@@ -41,7 +45,7 @@ namespace {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
-        irods::invoke_policy(_rei, "irods_policy_data_retention", args);
+        ipc::invoke_policy(_rei, "irods_policy_data_retention", args);
 
     } // apply_data_retention_policy
 
