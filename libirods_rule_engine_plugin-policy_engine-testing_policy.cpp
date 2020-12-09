@@ -1,18 +1,22 @@
 
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "exec_as_user.hpp"
 #include "policy_composition_framework_configuration_manager.hpp"
 
 #include "rsModAVUMetadata.hpp"
 
 namespace {
 
-    namespace pe = irods::policy_engine;
+    // clang-format off
+    namespace pc   = irods::policy_composition;
+    namespace pe   = irods::policy_composition::policy_engine;
+    namespace fs   = irods::experimental::filesystem;
+    namespace fsvr = irods::experimental::filesystem::server;
+    using     json = nlohmann::json;
+    // clang-format on
 
-    using json = nlohmann::json;
-
-    auto entity_type_to_option(const std::string& _type) {
+    auto entity_type_to_option(const std::string& _type)
+    {
         if("data_object" == _type) {
             return "-d";
         }
@@ -30,7 +34,8 @@ namespace {
         }
     } // entity_type_to_option
 
-    auto entity_type_to_target(const std::string& _type, json _params) {
+    auto entity_type_to_target(const std::string& _type, json _params)
+    {
         if("data_object" == _type) {
             return _params.at("logical_path").get<std::string>();
         }
@@ -47,9 +52,6 @@ namespace {
             return std::string{"unsupported"};
         }
     } // entity_type_to_option
-
-    namespace fs   = irods::experimental::filesystem;
-    namespace fsvr = irods::experimental::filesystem::server;
 
     irods::error testing_policy(const pe::context& ctx)
     {
