@@ -4,7 +4,6 @@
 
 #include "irods_hierarchy_parser.hpp"
 #include "irods_server_api_call.hpp"
-#include "exec_as_user.hpp"
 #include "parameter_substitution.hpp"
 
 #include "physPath.hpp"
@@ -12,7 +11,11 @@
 
 namespace {
 
-    namespace pe = irods::policy_engine;
+    // clang-format off
+    namespace pc   = irods::policy_composition;
+    namespace pe   = irods::policy_composition::policy_engine;
+    using     json = nlohmann::json;
+    // clang-format on
 
     bool destination_replica_exists(
         rsComm_t* comm
@@ -70,7 +73,7 @@ namespace {
             free(trans_stat);
             return ret;};
 
-        return irods::exec_as_user(*_comm, _user_name, repl_fcn);
+        return pc::exec_as_user(*_comm, _user_name, repl_fcn);
 
     } // replicate_object_to_resource
 

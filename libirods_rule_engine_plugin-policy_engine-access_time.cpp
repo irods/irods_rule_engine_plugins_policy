@@ -2,7 +2,6 @@
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
 #include "policy_composition_framework_configuration_manager.hpp"
-#include "exec_as_user.hpp"
 
 #include "rsModAVUMetadata.hpp"
 #include "rsOpenCollection.hpp"
@@ -10,6 +9,13 @@
 #include "rsCloseCollection.hpp"
 
 namespace {
+
+    // clang-format off
+    namespace pc   = irods::policy_composition;
+    namespace pe   = irods::policy_composition::policy_engine;
+    using     json = nlohmann::json;
+    // clang-format on
+
     int update_access_time_for_data_object(
           rsComm_t*          _comm
         , const std::string& _user_name
@@ -28,7 +34,7 @@ namespace {
         auto mod_fcn = [&](auto& comm) {
             return rsModAVUMetadata(&comm, &avuOp);};
 
-        return irods::exec_as_user(*_comm, _user_name, mod_fcn);
+        return pc::exec_as_user(*_comm, _user_name, mod_fcn);
 
     } // update_access_time_for_data_object
 
@@ -70,10 +76,6 @@ namespace {
         return err;
 
     } // apply_access_time_to_collection
-
-    namespace pe = irods::policy_engine;
-
-    using json = nlohmann::json;
 
     auto get_user_name_for_data_object(
         rsComm_t*          comm

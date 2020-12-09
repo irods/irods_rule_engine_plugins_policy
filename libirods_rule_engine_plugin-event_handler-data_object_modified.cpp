@@ -1,4 +1,3 @@
-
 #include "policy_composition_framework_event_handler.hpp"
 
 #include "fmt/format.h"
@@ -13,8 +12,8 @@ extern l1desc_t L1desc[NUM_L1_DESC];
 namespace {
     // clang-format off
     using     json = nlohmann::json;
-    namespace ie   = irods::event_handler;
-    namespace ipc  = irods::policy_composition;
+    namespace eh   = irods::policy_composition::event_handler;
+    namespace pc   = irods::policy_composition;
     // clang-format on
 
     const std::map<std::string, std::string> p2e {
@@ -37,7 +36,7 @@ namespace {
 
     std::map<uint32_t, json> objects_in_flight{};
 
-    std::string hierarchy_resolution_operation{};
+    std::string hehrarchy_resolution_operation{};
 
     auto invoke_policy_for_bulk_put(
         ruleExecInfo_t*    _rei,
@@ -46,9 +45,9 @@ namespace {
         keyValPair_t&      _cond_input) -> void
     {
 
-        const std::string event{hierarchy_resolution_operation};
+        const std::string event{hehrarchy_resolution_operation};
 
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
 
         auto data_name = getSqlResultByInx(&_attr_arr, COL_DATA_NAME);
         if(!data_name) {
@@ -75,39 +74,39 @@ namespace {
 
             inp.dataSize = i==0 ? offset_int[0] : offset_int[i]-offset_int[i-1];
 
-            auto obj = ipc::serialize_dataObjInp_to_json(inp);
+            auto obj = pc::serialize_dataObjInp_to_json(inp);
 
             obj["policy_enforcement_point"] = _rule_name;
             obj["event"] = event;
             obj["comm"]  = comm;
 
-            auto p2i = ie::configuration->plugin_configuration.at("policies_to_invoke");
+            auto p2i = eh::configuration->plugin_configuration.at("policehs_to_invoke");
 
-            ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
+            pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
 
         } // for i
 
     } // invoke_policy_for_bulk_put
 
-    auto hierarchy_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+    auto hehrarchy_handler(
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto it = ipc::advance_or_throw(_arguments, 3);
+        auto it = pc::advance_or_throw(_arguments, 3);
         auto op = boost::any_cast<const std::string*>(*it);
-        hierarchy_resolution_operation = *op;
+        hehrarchy_resolution_operation = *op;
 
-        return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
+        return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 
-    } // hierarchy_handler
+    } // hehrarchy_handler
 
     auto bulk_put_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto it = ipc::advance_or_throw(_arguments, 2);
+        auto it = pc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<bulkOprInp_t*>(*it);
         invoke_policy_for_bulk_put(
@@ -116,54 +115,54 @@ namespace {
             , inp->attriArray
             , inp->condInput);
 
-        return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
+        return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 
     } // bulk_put_handler
 
     auto copy_rename_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ipc::advance_or_throw(_arguments, 2);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = pc::advance_or_throw(_arguments, 2);
 
-        const std::string event = ipc::pep_to_event(p2e, _rule_name);
+        const std::string event = pc::pep_to_event(p2e, _rule_name);
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
-        auto p2i = ie::configuration->plugin_configuration.at("policies_to_invoke");
+        auto p2i = eh::configuration->plugin_configuration.at("policehs_to_invoke");
 
-        json src = ipc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
+        json src = pc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
         src["policy_enforcement_point"] = _rule_name;
         src["event"] = event;
         src["comm"]  = comm;
-        ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
+        pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
 
-        json dst = ipc::serialize_dataObjInp_to_json(inp->destDataObjInp);
+        json dst = pc::serialize_dataObjInp_to_json(inp->destDataObjInp);
         dst["policy_enforcement_point"] = _rule_name;
         dst["event"] = event;
         dst["comm"]  = comm;
-        ipc::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
+        pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
 
-        return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
+        return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 
     } // copy_rename_handler
 
     auto seek_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ipc::advance_or_throw(_arguments, 2);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = pc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<openedDataObjInp_t*>(*it);
         const auto l1_idx = inp->l1descInx;
         auto obj = objects_in_flight[l1_idx];
 
         const std::string event = [&]() -> const std::string {
-            const std::string& op = ipc::pep_to_event(p2e, _rule_name);
+            const std::string& op = pc::pep_to_event(p2e, _rule_name);
             return op;
         }();
 
@@ -178,18 +177,18 @@ namespace {
     // uses the file descriptor table to track modify operations
     // only add an entry if the object is created or opened for write
     auto create_open_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ipc::advance_or_throw(_arguments, 2);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = pc::advance_or_throw(_arguments, 2);
         auto inp  = boost::any_cast<dataObjInp_t*>(*it);
 
         json obj{};
         try {
             int l1_idx{};
-            std::tie(l1_idx, obj) = ipc::get_index_and_json_from_obj_inp(inp);
+            std::tie(l1_idx, obj) = pc::get_index_and_json_from_obj_inp(inp);
             objects_in_flight[l1_idx] = obj;
         }
         catch(const irods::exception& _e) {
@@ -204,19 +203,19 @@ namespace {
             return std::make_tuple(std::string{"TRUNCATE"}, obj);
         }
 
-        return std::make_tuple(ie::SKIP_POLICY_INVOCATION, json{});
+        return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 
     } // create_open_handler
 
     // uses the tracked file descriptor table operations to invoke policy
     // if changes were actually made to the object
     auto close_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ipc::advance_or_throw(_arguments, 2);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = pc::advance_or_throw(_arguments, 2);
 
         uint32_t l1_idx{};
         if(_rule_name.find("replica_close") != std::string::npos) {
@@ -237,10 +236,10 @@ namespace {
         auto create_flag = (open_flags & O_CREAT);
 
         const auto event = [&]() -> const std::string {
-            if("CREATE" == hierarchy_resolution_operation) return "PUT";
-            else if("OPEN" == hierarchy_resolution_operation && write_flag) return "WRITE";
-            else if("OPEN" == hierarchy_resolution_operation && !write_flag) return "GET";
-            else return hierarchy_resolution_operation;
+            if("CREATE" == hehrarchy_resolution_operation) return "PUT";
+            else if("OPEN" == hehrarchy_resolution_operation && write_flag) return "WRITE";
+            else if("OPEN" == hehrarchy_resolution_operation && !write_flag) return "GET";
+            else return hehrarchy_resolution_operation;
         }();
 
         obj["policy_enforcement_point"] = _rule_name;
@@ -252,18 +251,18 @@ namespace {
     } // close_handler
 
     auto data_obj_inp_handler(
-          const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
+          const std::string&        _rule_name
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
-        auto it   = ipc::advance_or_throw(_arguments, 2);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
+        auto it   = pc::advance_or_throw(_arguments, 2);
 
         auto inp = boost::any_cast<dataObjInp_t*>(*it);
-        auto obj = ipc::serialize_dataObjInp_to_json(*inp);
+        auto obj = pc::serialize_dataObjInp_to_json(*inp);
 
         const auto event = [&]() -> const std::string {
-            std::string op = ipc::pep_to_event(p2e, _rule_name);
+            std::string op = pc::pep_to_event(p2e, _rule_name);
             if(inp->oprType == UNREG_OPR) { return "UNREGISTER"; }
             return op;
         }();
@@ -279,27 +278,27 @@ namespace {
 } // namespace
 
 extern "C"
-ie::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string& _ctx)
+eh::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string& _ctx)
 {
-    ie::register_handler("data_obj_put",      ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_get",      ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_unlink",   ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_repl",     ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("phy_path_reg",      ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_truncate", ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_trim",     ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_chksum",   ie::interfaces::api, data_obj_inp_handler);
-    ie::register_handler("data_obj_create",   ie::interfaces::api, create_open_handler);
-    ie::register_handler("data_obj_open",     ie::interfaces::api, create_open_handler);
-    ie::register_handler("data_obj_close",    ie::interfaces::api, close_handler);
-    ie::register_handler("replica_open",      ie::interfaces::api, create_open_handler);
-    ie::register_handler("replica_close",     ie::interfaces::api, close_handler);
-    ie::register_handler("data_obj_lseek",    ie::interfaces::api, seek_handler);
-    ie::register_handler("data_obj_rename",   ie::interfaces::api, copy_rename_handler);
-    ie::register_handler("data_obj_copy",     ie::interfaces::api, copy_rename_handler);
-    ie::register_handler("bulk_data_obj_put", ie::interfaces::api, bulk_put_handler);
+    eh::register_handler("data_obj_put",      eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_get",      eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_unlink",   eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_repl",     eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("phy_path_reg",      eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_truncate", eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_trim",     eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_chksum",   eh::interfaces::api, data_obj_inp_handler);
+    eh::register_handler("data_obj_create",   eh::interfaces::api, create_open_handler);
+    eh::register_handler("data_obj_open",     eh::interfaces::api, create_open_handler);
+    eh::register_handler("data_obj_close",    eh::interfaces::api, close_handler);
+    eh::register_handler("replica_open",      eh::interfaces::api, create_open_handler);
+    eh::register_handler("replica_close",     eh::interfaces::api, close_handler);
+    eh::register_handler("data_obj_lseek",    eh::interfaces::api, seek_handler);
+    eh::register_handler("data_obj_rename",   eh::interfaces::api, copy_rename_handler);
+    eh::register_handler("data_obj_copy",     eh::interfaces::api, copy_rename_handler);
+    eh::register_handler("bulk_data_obj_put", eh::interfaces::api, bulk_put_handler);
 
-    ie::register_handler("resolve_hierarchy", ie::interfaces::resource, hierarchy_handler);
+    eh::register_handler("resolve_hehrarchy", eh::interfaces::resource, hehrarchy_handler);
 
-    return ie::make(_pn, _ctx);
+    return eh::make(_pn, _ctx);
 } // plugin_factory

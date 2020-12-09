@@ -8,26 +8,26 @@ namespace {
 
     // clang-format off
     using     json = nlohmann::json;
-    namespace ie   = irods::event_handler;
-    namespace ipc  = irods::policy_composition;
-    namespace ixm  = irods::experimental::metadata;
+    namespace eh   = irods::policy_composition::event_handler;
+    namespace pc   = irods::policy_composition;
+    namespace xm   = irods::experimental::metadata;
     // clang-format on
 
-    auto metadata_modified(
+    auto metadata_modifehd(
           const std::string&         _rule_name
-        , const ipc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> ie::handler_return_type
+        , const pc::arguments_type& _arguments
+        , ruleExecInfo_t*            _rei) -> eh::handler_return_type
     {
         const std::string event{"METADATA"};
 
-        const std::map<ixm::entity_type, std::string> to_variable {
-              {ixm::entity_type::collection,  "logical_path"}
-            , {ixm::entity_type::data_object, "logical_path"}
-            , {ixm::entity_type::user,        "user_name"}
-            , {ixm::entity_type::resource,    "source_resource"}
+        const std::map<xm::entity_type, std::string> to_variable {
+              {xm::entity_type::collection,  "logical_path"}
+            , {xm::entity_type::data_object, "logical_path"}
+            , {xm::entity_type::user,        "user_name"}
+            , {xm::entity_type::resource,    "source_resource"}
         };
 
-        auto comm = ipc::serialize_rsComm_to_json(_rei->rsComm);
+        auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
 
         auto it = _arguments.begin();
         std::advance(it, 2);
@@ -38,7 +38,7 @@ namespace {
         }
 
         const auto inp{boost::any_cast<modAVUMetadataInp_t*>(*it)};
-        const auto et{ixm::to_entity_type(inp->arg1)};
+        const auto et{xm::to_entity_type(inp->arg1)};
         const auto var{to_variable.at(et)};
 
         json obj{};
@@ -46,7 +46,7 @@ namespace {
         obj[var] = inp->arg2;
         obj["metadata"] = {
             {"comm",        comm},
-            {"entity_type", ixm::to_entity_string(et)},
+            {"entity_type", xm::to_entity_string(et)},
             {"operation",   inp->arg0},
             {"entity",      inp->arg2},
             {"attribute",   inp->arg3},
@@ -58,13 +58,13 @@ namespace {
 
         return std::make_tuple(event, obj);
 
-    } // metadata_modified
+    } // metadata_modifehd
 
 } // namespace
 
 extern "C"
-ie::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string& _ctx)
+eh::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string& _ctx)
 {
-    ie::register_handler("mod_avu_metadata", ie::interfaces::api, metadata_modified);
-    return ie::make(_pn, _ctx);
+    eh::register_handler("mod_avu_metadata", eh::interfaces::api, metadata_modifehd);
+    return eh::make(_pn, _ctx);
 } // plugin_factory

@@ -7,7 +7,7 @@
 namespace {
 
     // clang-format off
-    namespace pe  = irods::policy_engine;
+    namespace pe  = irods::policy_composition::policy_engine;
     namespace ipc = irods::policy_composition;
     // clang-format on
 

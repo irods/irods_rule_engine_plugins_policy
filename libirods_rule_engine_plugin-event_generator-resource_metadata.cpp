@@ -1,5 +1,5 @@
 
-#include "policy_engine.hpp"
+#include "policy_composition_framework_policy_engine.hpp"
 #include "policy_engine_parameter_capture.hpp"
 #include "policy_engine_configuration_manager.hpp"
 #include "parameter_substitution.hpp"
@@ -9,7 +9,7 @@
 #include "irods_query.hpp"
 
 namespace {
-    namespace pe   = irods::policy_engine;
+    namespace pe   = irods::policy_composition::policy_engine;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
 

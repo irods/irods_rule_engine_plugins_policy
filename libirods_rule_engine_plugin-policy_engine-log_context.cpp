@@ -1,7 +1,6 @@
 
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "exec_as_user.hpp"
 #include "filesystem.hpp"
 #include "policy_composition_framework_configuration_manager.hpp"
 
@@ -12,9 +11,11 @@
 
 namespace {
 
-    namespace pe = irods::policy_engine;
-
-    using json = nlohmann::json;
+    // clang-format off
+    namespace pc   = irods::policy_composition;
+    namespace pe   = irods::policy_composition::policy_engine;
+    using     json = nlohmann::json;
+    // clang-format on
 
     irods::error log_context(const pe::context& ctx)
     {

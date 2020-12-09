@@ -1,13 +1,18 @@
 
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "exec_as_user.hpp"
 #include "policy_composition_framework_configuration_manager.hpp"
 #include "data_verification_utilities.hpp"
 
-namespace pe = irods::policy_engine;
 
 namespace {
+
+    // clang-format off
+    namespace pc   = irods::policy_composition;
+    namespace pe   = irods::policy_composition::policy_engine;
+    using     json = nlohmann::json;
+    // clang-format on
+
     namespace verification {
         static const std::string catalog("catalog");
         static const std::string filesystem("filesystem");
@@ -61,7 +66,7 @@ namespace {
                        , source_resource
                        , destination_resource);};
 
-        auto verified = irods::exec_as_user(*comm, user_name, verif_fcn);
+        auto verified = pc::exec_as_user(*comm, user_name, verif_fcn);
 
         if(verified) {
             return SUCCESS();

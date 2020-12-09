@@ -1,28 +1,29 @@
-
-#include <algorithm>
-#include <iostream>
-
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "parameter_substitution.hpp"
-#include "exec_as_user.hpp"
-#include "irods_server_api_call.hpp"
-#include "apiNumber.h"
 #include "policy_composition_framework_configuration_manager.hpp"
+
+#include "parameter_substitution.hpp"
+
+#include "apiNumber.h"
+#include "irods_server_api_call.hpp"
 #include "irods_resource_manager.hpp"
 #include "irods_hierarchy_parser.hpp"
 
 #include "json.hpp"
 
+#include <algorithm>
+#include <iostream>
+
 extern irods::resource_manager resc_mgr;
 
-namespace pe = irods::policy_engine;
-
 namespace {
-    using string_vector = std::vector<std::string>;
-    using string_tuple_vector = std::vector<std::tuple<std::string, std::string>>;
 
-
+    // clang-format off
+    namespace pc                  = irods::policy_composition;
+    namespace pe                  = irods::policy_composition::policy_engine;
+    using     string_vector       = std::vector<std::string>;
+    using     string_tuple_vector = std::vector<std::tuple<std::string, std::string>>;
+    // clang-format on
 
     namespace retention_mode {
         static const std::string remove_all{"remove_all_replicas"};
@@ -33,8 +34,6 @@ namespace {
     {
         return (m == retention_mode::remove_all || m == retention_mode::trim_single);
     }
-
-
 
     auto get_replica_number_for_resource(
           rsComm_t*          comm
@@ -59,8 +58,6 @@ namespace {
         return qobj.size() > 0 ? qobj.front()[0] : "INVALID_REPLICA_NUMBER";
 
     } // get_replica_number_for_resource
-
-
 
     int remove_data_object(
           int                api_index
@@ -92,11 +89,9 @@ namespace {
             return irods::server_api_call(api_index, &comm, &obj_inp);
         };
 
-        return irods::exec_as_user(*comm, user_name, trim_fcn);
+        return pc::exec_as_user(*comm, user_name, trim_fcn);
 
     } // remove_data_object
-
-
 
     auto get_leaf_resources_for_object(rsComm_t* comm, const std::string& logical_path)
     {
@@ -123,8 +118,6 @@ namespace {
 
     } // get_leaf_resources_for_object
 
-
-
     auto get_leaf_resource_for_root(
         rsComm_t* comm
       , const std::string& source_resource
@@ -150,8 +143,6 @@ namespace {
 
     } // get_leaf_resource_for_root
 
-
-
     auto get_root_resources_for_leaves(rsComm_t* comm, const string_vector& leaf_resources)
     {
         std::vector<std::tuple<std::string, std::string>> roots_and_leaves;
@@ -166,8 +157,6 @@ namespace {
         return roots_and_leaves;
 
     } // get_root_resources_for_leaves
-
-
 
     auto filter_roots_and_leaves_by_whitelist(
         const string_vector&       whitelist
@@ -188,8 +177,6 @@ namespace {
 
     } // filter_roots_and_leaves_by_whitelist
 
-
-
     bool resource_has_preservation_metadata(
           rsComm_t*            comm
         , const std::string&   attribute
@@ -204,8 +191,6 @@ namespace {
         return qobj.size() != 0;
 
     } // resource_has_preservation_metadata
-
-
 
     auto filter_roots_and_leaves_by_preservation_metadata(
           rsComm_t*                  comm
@@ -222,8 +207,6 @@ namespace {
         return tmp;
 
     } // filter_roots_and_leaves_by_preservation_metadata
-
-
 
     auto determine_resource_list_for_unlink(
           rsComm_t*            comm
@@ -253,8 +236,6 @@ namespace {
 
     } // determine_resource_list_for_unlink
 
-
-
     auto object_can_be_trimmed(
         rsComm_t*            comm
       , const std::string&   attribute
@@ -270,8 +251,6 @@ namespace {
         return !resource_has_preservation_metadata(comm, attribute, source_resource);
 
     } // object_can_be_trimmed
-
-
 
     irods::error data_retention_policy(const pe::context& ctx)
     {
@@ -293,11 +272,9 @@ namespace {
         auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
+        auto comm      = ctx.rei->rsComm;
         auto whitelist = cfg_mgr.get("resource_white_list", json::array());
-
         auto attribute = cfg_mgr.get("attribute", "irods::retention::preserve_replicas");
-
-        auto comm = ctx.rei->rsComm;
 
         if(mode == retention_mode::remove_all) {
             auto [unlink, resources_to_remove] =

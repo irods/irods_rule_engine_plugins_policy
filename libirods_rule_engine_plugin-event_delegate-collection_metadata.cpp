@@ -5,7 +5,7 @@
 #include "json.hpp"
 
 namespace {
-    namespace pe   = irods::policy_engine;
+    namespace pe   = irods::policy_composition::policy_engine;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
 
