@@ -53,7 +53,7 @@ namespace {
         }
     } // entity_type_to_option
 
-    irods::error testing_policy(const pe::context& ctx)
+    irods::error testing_policy(const pe::context& ctx, pe::arg_type out)
     {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 

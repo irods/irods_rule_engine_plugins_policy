@@ -82,7 +82,7 @@ namespace {
         }
     }
 
-    irods::error query_iterator_policy(const pe::context& ctx)
+    irods::error query_iterator_policy(const pe::context& ctx, pe::arg_type out)
     {
         try {
             irods::error err;

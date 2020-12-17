@@ -77,7 +77,7 @@ namespace {
 
     } // replicate_object_to_resource
 
-    irods::error replication_policy(const pe::context ctx)
+    irods::error replication_policy(const pe::context ctx, pe::arg_type out)
     {
         auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
 
