@@ -435,7 +435,7 @@ class TestEventHandlerObjectModified(ResourceBase, unittest.TestCase):
             with event_handler_configured():
                 try:
                     admin_session.assert_icommand('imv ' + filename + ' ' + filename2)
-                    admin_session.assert_icommand('imeta ls -d /tempZone/home/rods', 'STDOUT_SINGLELINE', 'RENAME')
+                    #admin_session.assert_icommand('imeta ls -d /tempZone/home/rods', 'STDOUT_SINGLELINE', 'RENAME')
                     admin_session.assert_icommand('imeta ls -d ' + filename2, 'STDOUT_SINGLELINE', 'RENAME')
                 finally:
                     admin_session.assert_icommand('imeta rm -C /tempZone/home/rods irods_policy_testing_policy RENAME')

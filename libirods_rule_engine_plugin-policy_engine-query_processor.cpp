@@ -21,7 +21,7 @@ namespace {
     // clang-format on
 
 
-    irods::error query_processor_policy(const pe::context& ctx)
+    irods::error query_processor_policy(const pe::context& ctx, pe::arg_type out)
     {
         try {
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};

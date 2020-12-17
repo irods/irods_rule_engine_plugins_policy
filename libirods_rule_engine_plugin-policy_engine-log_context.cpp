@@ -17,7 +17,7 @@ namespace {
     using     json = nlohmann::json;
     // clang-format on
 
-    irods::error log_context(const pe::context& ctx)
+    irods::error log_context(const pe::context& ctx, pe::arg_type out)
     {
         std::cout << "PARAMETERS:    [" << ctx.parameters.dump(4)    << "]\n";
         std::cout << "CONFIGURATION: [" << ctx.configuration.dump(4) << "]\n";

@@ -19,7 +19,7 @@ namespace {
         static const std::string checksum("checksum");
     }
 
-    irods::error data_verification_policy(const pe::context& ctx)
+    irods::error data_verification_policy(const pe::context& ctx, pe::arg_type out)
     {
         auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
 

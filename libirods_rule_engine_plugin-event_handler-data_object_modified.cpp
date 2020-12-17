@@ -36,7 +36,7 @@ namespace {
 
     std::map<uint32_t, json> objects_in_flight{};
 
-    std::string hehrarchy_resolution_operation{};
+    std::string hierarchy_resolution_operation{};
 
     auto invoke_policy_for_bulk_put(
         ruleExecInfo_t*    _rei,
@@ -45,7 +45,7 @@ namespace {
         keyValPair_t&      _cond_input) -> void
     {
 
-        const std::string event{hehrarchy_resolution_operation};
+        const std::string event{hierarchy_resolution_operation};
 
         auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
 
@@ -80,7 +80,7 @@ namespace {
             obj["event"] = event;
             obj["comm"]  = comm;
 
-            auto p2i = eh::configuration->plugin_configuration.at("policehs_to_invoke");
+            auto p2i = eh::configuration->plugin_configuration.at("policies_to_invoke");
 
             pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
 
@@ -88,18 +88,18 @@ namespace {
 
     } // invoke_policy_for_bulk_put
 
-    auto hehrarchy_handler(
+    auto hierarchy_handler(
           const std::string&        _rule_name
         , const pc::arguments_type& _arguments
         , ruleExecInfo_t*           _rei) -> std::tuple<std::string, json>
     {
         auto it = pc::advance_or_throw(_arguments, 3);
         auto op = boost::any_cast<const std::string*>(*it);
-        hehrarchy_resolution_operation = *op;
+        hierarchy_resolution_operation = *op;
 
         return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 
-    } // hehrarchy_handler
+    } // hierarchy_handler
 
     auto bulk_put_handler(
           const std::string&        _rule_name
@@ -131,7 +131,7 @@ namespace {
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
-        auto p2i = eh::configuration->plugin_configuration.at("policehs_to_invoke");
+        auto p2i = eh::configuration->plugin_configuration.at("policies_to_invoke");
 
         json src = pc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
         src["policy_enforcement_point"] = _rule_name;
@@ -235,11 +235,12 @@ namespace {
         auto write_flag  = (open_flags & O_WRONLY || open_flags & O_RDWR);
         auto create_flag = (open_flags & O_CREAT);
 
+
         const auto event = [&]() -> const std::string {
-            if("CREATE" == hehrarchy_resolution_operation) return "PUT";
-            else if("OPEN" == hehrarchy_resolution_operation && write_flag) return "WRITE";
-            else if("OPEN" == hehrarchy_resolution_operation && !write_flag) return "GET";
-            else return hehrarchy_resolution_operation;
+            if     ("CREATE" == hierarchy_resolution_operation)              return "PUT";
+            else if("OPEN" == hierarchy_resolution_operation && write_flag)  return "WRITE";
+            else if("OPEN" == hierarchy_resolution_operation && !write_flag) return "GET";
+            else return hierarchy_resolution_operation;
         }();
 
         obj["policy_enforcement_point"] = _rule_name;
@@ -298,7 +299,7 @@ eh::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string
     eh::register_handler("data_obj_copy",     eh::interfaces::api, copy_rename_handler);
     eh::register_handler("bulk_data_obj_put", eh::interfaces::api, bulk_put_handler);
 
-    eh::register_handler("resolve_hehrarchy", eh::interfaces::resource, hehrarchy_handler);
+    eh::register_handler("resolve_hierarchy", eh::interfaces::resource, hierarchy_handler);
 
     return eh::make(_pn, _ctx);
 } // plugin_factory

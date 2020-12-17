@@ -252,7 +252,7 @@ namespace {
 
     } // object_can_be_trimmed
 
-    irods::error data_retention_policy(const pe::context& ctx)
+    irods::error data_retention_policy(const pe::context& ctx, pe::arg_type out)
     {
         auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
 

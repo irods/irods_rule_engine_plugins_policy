@@ -108,7 +108,7 @@ namespace {
 
 
 
-    irods::error access_time_policy(const pe::context& ctx)
+    irods::error access_time_policy(const pe::context& ctx, pe::arg_type out)
     {
 
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};

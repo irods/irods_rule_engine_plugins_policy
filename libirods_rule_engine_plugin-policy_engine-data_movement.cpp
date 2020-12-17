@@ -16,11 +16,13 @@ namespace {
     void apply_data_replication_policy(
           ruleExecInfo_t*    _rei
         , pe::arg_type _parameters
-        , pe::arg_type _configuration)
+        , pe::arg_type _configuration
+        , pe::arg_type _out)
     {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
+        args.push_back(boost::any(_out));
         ipc::invoke_policy(_rei, "irods_policy_data_replication", args);
 
     } // apply_data_replication_policy
@@ -28,11 +30,13 @@ namespace {
     void apply_data_verification_policy(
           ruleExecInfo_t*    _rei
         , pe::arg_type _parameters
-        , pe::arg_type _configuration)
+        , pe::arg_type _configuration
+        , pe::arg_type _out)
     {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
+        args.push_back(boost::any(_out));
         ipc::invoke_policy(_rei, "irods_policy_data_verification", args);
 
     } // apply_data_verification_policy
@@ -40,23 +44,25 @@ namespace {
     void apply_data_retention_policy(
           ruleExecInfo_t*    _rei
         , pe::arg_type _parameters
-        , pe::arg_type _configuration)
+        , pe::arg_type _configuration
+        , pe::arg_type _out)
     {
         std::list<boost::any> args;
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
+        args.push_back(boost::any(_out));
         ipc::invoke_policy(_rei, "irods_policy_data_retention", args);
 
     } // apply_data_retention_policy
 
-    irods::error data_movement_policy(const pe::context& ctx)
+    irods::error data_movement_policy(const pe::context& _ctx, pe::arg_type _out)
     {
         nlohmann::json source_to_destination_map;
 
-        pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
+        pe::configuration_manager cfg_mgr{_ctx.instance_name, _ctx.configuration};
 
         auto [user_name, logical_path, source_resource, destination_resource] =
-            capture_parameters(ctx.parameters, tag_first_resc);
+            capture_parameters(_ctx.parameters, tag_first_resc);
 
         if(destination_resource.empty()) {
             destination_resource = cfg_mgr.get("destination_resource", "");
@@ -67,7 +73,7 @@ namespace {
                     return ERROR(
                                SYS_INVALID_INPUT_PARAM,
                                boost::format("%s destination_resource or source_to_destination_map are not configured")
-                               % ctx.instance_name);
+                               % _ctx.instance_name);
                 }
 
                 if(source_to_destination_map.find(source_resource) == source_to_destination_map.end()) {
@@ -87,22 +93,25 @@ namespace {
         };
 
         auto pstr = params.dump();
-        auto cstr = ctx.configuration.dump();
+        auto cstr = _ctx.configuration.dump();
 
         apply_data_replication_policy(
-              ctx.rei
-            , pstr
-            , cstr);
+              _ctx.rei
+            , &pstr
+            , &cstr
+            , _out);
 
         apply_data_verification_policy(
-              ctx.rei
-            , pstr
-            , cstr);
+              _ctx.rei
+            , &pstr
+            , &cstr
+            , _out);
 
         apply_data_retention_policy(
-              ctx.rei
-            , pstr
-            , cstr);
+              _ctx.rei
+            , &pstr
+            , &cstr
+            , _out);
 
         return SUCCESS();
 
