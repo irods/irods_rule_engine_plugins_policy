@@ -110,7 +110,6 @@ namespace {
 
     irods::error access_time_policy(const pe::context& ctx, pe::arg_type out)
     {
-
         pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
@@ -121,7 +120,8 @@ namespace {
 
         auto attribute = cfg_mgr.get("attribute", "irods::access_time");
 
-        auto cond_input = ctx.parameters.contains("cond_input") ? ctx.parameters.at("cond_input") : json::object();
+        auto cond_input = pc::get(ctx.parameters, "cond_input", json{});
+
         collection_operation = !cond_input.empty() && !cond_input[COLLECTION_KW].empty();
 
         auto comm = ctx.rei->rsComm;

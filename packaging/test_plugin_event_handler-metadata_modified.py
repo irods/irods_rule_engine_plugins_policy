@@ -39,7 +39,7 @@ def event_handler_configured(arg=None):
                         {
                             "active_policy_clauses" : ["post"],
                             "events" : ["metadata"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }

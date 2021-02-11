@@ -8,7 +8,7 @@ namespace {
         , ruleExecInfo_t*           _rei) -> eh::handler_return_type
     {
         return general_administration_handler("resource", _rule_name, _arguments, _rei);
-    } // user_handler
+    } // resource_handler
 
 } // namespace
 

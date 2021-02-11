@@ -57,6 +57,8 @@ namespace {
     {
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
 
+        rodsLog(LOG_NOTICE, "PARAMETERS\n--------\n%s\n--------", ctx.parameters.dump(4).c_str());
+
         if(ctx.parameters.contains("query_results")) {
             using fsp = irods::experimental::filesystem::path;
             std::string tmp_coll_name{}, tmp_data_name{};

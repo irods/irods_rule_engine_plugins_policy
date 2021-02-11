@@ -15,29 +15,40 @@ namespace {
 
     // clang-format off
     namespace pe   = irods::policy_composition::policy_engine;
-    namespace ipc  = irods::policy_composition;
+    namespace pc   = irods::policy_composition;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
     // clang-format on
 
+    template <typename T>
+    auto get(const json& j, const std::string& k, T d) -> T
+    {
+        if(!j.contains(k)) {
+            return d;
+        }
+
+        return j.at(k).get<T>();
+    } // get
 
     irods::error query_processor_policy(const pe::context& ctx, pe::arg_type out)
     {
         try {
             pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
 
-            auto number_of_threads = cfg_mgr.get<int>("number_of_threads", 4);
-            auto query_limit = cfg_mgr.get<int>("query_limit", 0);
-            auto query_type_string = cfg_mgr.get<std::string>("query_type", "general");
+            const auto& params = ctx.parameters;
 
-            auto query_type = irods::query<rsComm_t>::convert_string_to_query_type(query_type_string);
+            // clang-format off
+            auto number_of_threads = pc::get(params, "number_of_threads", 4);
+            auto query_limit       = pc::get(params, "query_limit",       uint32_t{0});
+            auto query_type_string = pc::get(params, "query_type",        std::string{"general"});
+            auto query_string      = pc::get(params, "query_string",      std::string{});
+            auto policy_to_invoke  = pc::get(params, "policy_to_invoke",  std::string{});
+            // clang-format on
 
-            auto query_string = cfg_mgr.get<std::string>("query_string", "");
             if(query_string.empty()) {
                 return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty query string");
             }
 
-            auto policy_to_invoke = cfg_mgr.get<std::string>("policy_to_invoke", "");
             if(policy_to_invoke.empty()) {
                 return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty policy_to_invoke");
             }
@@ -58,14 +69,14 @@ namespace {
             std::vector<std::string> values = {std::to_string(std::time(nullptr)), "0", user_name, coll_name, data_name, source_resource, destination_resource};
 
             time_t lifetime{};
-            if(ctx.configuration.contains("lifetime")) {
-                auto ltp = ctx.configuration.at("lifetime");
+            if(ctx.parameters.contains("lifetime")) {
+                auto ltp = ctx.parameters.at("lifetime");
                 if(pe::paramter_requires_query_substitution(ltp)) {
                     auto tmp = pe::perform_query_substitution<time_t>(comm, ltp, values);
                     lifetime = std::time(nullptr) - tmp;
                 }
                 else {
-                    auto tmp = ctx.configuration.at("lifetime").get<time_t>();
+                    auto tmp = ctx.parameters.at("lifetime").get<time_t>();
                     lifetime = std::time(nullptr) - tmp;
                 }
             }
@@ -77,7 +88,13 @@ namespace {
             using json       = nlohmann::json;
             using result_row = irods::query_processor<rsComm_t>::result_row;
 
-            json params_to_pass{ctx.parameters};
+            json params_to_pass{};
+            if(ctx.parameters.contains("parameters")) {
+                params_to_pass = ctx.parameters.at("parameters");
+            }
+            else {
+                params_to_pass = ctx.parameters;
+            }
 
             auto job = [&](const result_row& _results) {
                 auto res_arr = json::array();
@@ -85,23 +102,27 @@ namespace {
                     res_arr.push_back(r);
                 }
                 params_to_pass["query_results"] = res_arr;
-                std::string params_str = params_to_pass.dump();
+                std::string params_str = params_to_pass.dump(4);
 
-                std::string config_str{};
-                if(ctx.configuration.contains("configuration")) {
-                   config_str = ctx.configuration.at("configuration").dump();
+                std::string config_str{}, out_str{};
+                if(ctx.parameters.contains("configuration")) {
+                   config_str = ctx.parameters.at("configuration").dump(4);
                 }
 
                 std::list<boost::any> arguments;
-                arguments.push_back(boost::any(std::ref(params_str)));
-                arguments.push_back(boost::any(std::ref(config_str)));
-                ipc::invoke_policy(ctx.rei, policy_to_invoke, arguments);
+                arguments.push_back(boost::any(&params_str));
+                arguments.push_back(boost::any(&config_str));
+                arguments.push_back(boost::any(&out_str));
+                pc::invoke_policy(ctx.rei, policy_to_invoke, arguments);
             }; // job
 
-            irods::thread_pool thread_pool{number_of_threads};
-            irods::query_processor<rsComm_t> qp(query_string, job, query_limit, query_type);
-            auto future = qp.execute(thread_pool, *ctx.rei->rsComm);
-            auto errors = future.get();
+            auto query_type = irods::query<rsComm_t>::convert_string_to_query_type(query_type_string);
+
+            auto tp     = irods::thread_pool{number_of_threads};
+            auto qp     = irods::query_processor<rsComm_t>{query_string, job, query_limit, query_type};
+            auto f      = qp.execute(tp, *ctx.rei->rsComm);
+            auto errors = f.get();
+
             if(errors.size() > 0) {
                 for(auto& e : errors) {
                     rodsLog(
@@ -119,29 +140,19 @@ namespace {
                            % query_string.c_str());
             }
 
-            if(0 == qp.size() && ctx.configuration.contains("default_results_when_no_rows_found")) {
+
+            if(0 == f.size() && ctx.parameters.contains("default_results_when_no_rows_found")) {
+
+                auto default_results = ctx.parameters.at("default_results_when_no_rows_found");
+
                 result_row res;
-                for(auto& r : ctx.configuration.at("default_results_when_no_rows_found")) {
-                    res.push_back(r.get<std::string>());
-                }
-
-                job(res);
-
-                if(errors.size() > 0) {
-                    for(auto& e : errors) {
-                        rodsLog(
-                            LOG_ERROR,
-                            "query failed [%d]::[%s]",
-                            std::get<0>(e),
-                            std::get<1>(e).c_str());
+                for(auto& row : default_results) {
+                    res.clear();
+                    for(auto& r: row) {
+                        res.push_back(r.get<std::string>());
                     }
 
-                    return ERROR(
-                               SYS_INVALID_OPR_TYPE,
-                               boost::format(
-                               "query processor encountered an error for [%d] rows for query [%s]")
-                               % errors.size()
-                               % query_string.c_str());
+                    job(res);
                 }
             }
         }
@@ -150,7 +161,7 @@ namespace {
                 // if nothing of interest is found, thats not an error
             }
             else {
-                ipc::exception_to_rerror(
+                pc::exception_to_rerror(
                     e, ctx.rei->rsComm->rError);
                 return ERROR(
                           e.code(),

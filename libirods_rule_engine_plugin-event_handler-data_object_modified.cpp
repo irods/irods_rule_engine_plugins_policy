@@ -160,6 +160,9 @@ namespace {
         auto inp = boost::any_cast<openedDataObjInp_t*>(*it);
         const auto l1_idx = inp->l1descInx;
         auto obj = objects_in_flight[l1_idx];
+        if(obj.empty()) {
+            return std::make_tuple(std::string{}, json{});
+        }
 
         const std::string event = [&]() -> const std::string {
             const std::string& op = pc::pep_to_event(p2e, _rule_name);
@@ -193,7 +196,7 @@ namespace {
         }
         catch(const irods::exception& _e) {
             rodsLog(
-               LOG_ERROR,
+               LOG_DEBUG,
                "irods::get_index_and_resource_from_obj_inp failed for [%s]",
                inp->objPath);
         }
@@ -230,6 +233,10 @@ namespace {
         }
 
         auto obj = objects_in_flight[l1_idx];
+        if(obj.empty()) {
+            return std::make_tuple(std::string{}, json{});
+
+        }
 
         auto open_flags  = boost::lexical_cast<int>(obj["open_flags"].get<std::string>());
         auto write_flag  = (open_flags & O_WRONLY || open_flags & O_RDWR);

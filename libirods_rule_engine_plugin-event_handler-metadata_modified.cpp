@@ -13,9 +13,9 @@ namespace {
     namespace xm   = irods::experimental::metadata;
     // clang-format on
 
-    auto metadata_modifehd(
+    auto metadata_modified(
           const std::string&         _rule_name
-        , const pc::arguments_type& _arguments
+        , const pc::arguments_type&  _arguments
         , ruleExecInfo_t*            _rei) -> eh::handler_return_type
     {
         const std::string event{"METADATA"};
@@ -65,6 +65,6 @@ namespace {
 extern "C"
 eh::plugin_pointer_type plugin_factory(const std::string& _pn, const std::string& _ctx)
 {
-    eh::register_handler("mod_avu_metadata", eh::interfaces::api, metadata_modifehd);
+    eh::register_handler("mod_avu_metadata", eh::interfaces::api, metadata_modified);
     return eh::make(_pn, _ctx);
 } // plugin_factory

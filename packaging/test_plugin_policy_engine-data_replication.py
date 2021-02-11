@@ -74,7 +74,7 @@ def data_replication_with_event_handler_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration"],
-                            "policy"    : "irods_policy_data_replication",
+                            "policy_to_invoke"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
                             }
@@ -128,7 +128,7 @@ def data_replication_with_event_handler_metadata_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration"],
-                            "policy"    : "irods_policy_data_replication",
+                            "policy_to_invoke"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
                             }
@@ -220,7 +220,7 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration"],
-                            "policy"    : "irods_policy_data_replication",
+                            "policy_to_invoke"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "attribute"  : "event_handler_attribute",
                                 "destination_resource" : "AnotherResc"
@@ -280,7 +280,7 @@ class TestPolicyEngineDataReplication(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
@@ -317,7 +317,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
@@ -372,7 +372,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -411,7 +411,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
@@ -462,7 +462,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
