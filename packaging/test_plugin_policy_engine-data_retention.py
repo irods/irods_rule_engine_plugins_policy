@@ -24,7 +24,7 @@ from .. import lib
 
 
 @contextlib.contextmanager
-def data_retention_configured(arg=None):
+def data_retention_remove_all_configured(arg=None):
     filename = paths.server_config_path()
     with lib.file_backed_up(filename):
         irods_config = IrodsConfig()
@@ -38,8 +38,63 @@ def data_retention_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["replication"],
-                            "policy"    : "irods_policy_data_retention",
+                            "policy_to_invoke"    : "irods_policy_data_retention",
                             "configuration" : {
+                            }
+                        }
+                    ]
+                }
+            }
+        )
+
+        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true",
+                    "mode" : "remove_all_replicas"
+                }
+           }
+        )
+
+        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+           }
+        )
+
+        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+
+        IrodsController().restart()
+
+        try:
+            yield
+        finally:
+            pass
+
+@contextlib.contextmanager
+def data_retention_trim_single_configured(arg=None):
+    filename = paths.server_config_path()
+    with lib.file_backed_up(filename):
+        irods_config = IrodsConfig()
+        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
+
+        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+            {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["replication"],
+                            "policy_to_invoke"    : "irods_policy_data_retention",
+                            "configuration" : {
+                                "mode" : "trim_single_replica"
                             }
                         }
                     ]
@@ -92,7 +147,7 @@ def data_retention_with_whitelist_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["replication"],
-                            "policy"    : "irods_policy_data_retention",
+                            "policy_to_invoke"    : "irods_policy_data_retention",
                             "configuration" : {
                                 "resource_white_list" : ["demoResc", "AnotherResc"]
                             }
@@ -107,7 +162,8 @@ def data_retention_with_whitelist_configured(arg=None):
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
+                    "log_errors" : "true",
+                    "mode" : "trim_single_replica"
                 }
            }
         )
@@ -147,10 +203,11 @@ def data_retention_alternate_attributes_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["replication"],
-                            "policy"    : "irods_policy_data_retention",
+                            "policy_to_invoke"    : "irods_policy_data_retention",
                             "configuration" : {
                                 "log_errors" : "true",
-                                "attribute"  : "event_handler_attribute"
+                                "attribute"  : "event_handler_attribute",
+                                "mode" : "trim_single_replica"
                             }
                         }
                     ]
@@ -163,7 +220,8 @@ def data_retention_alternate_attributes_configured(arg=None):
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
+                    "log_errors" : "true",
+                    "mode" : "trim_single_replica"
                 }
            }
         )
@@ -204,7 +262,7 @@ class TestPolicyEngineDataRetention(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_retention",
     "parameters" : {
@@ -213,6 +271,7 @@ class TestPolicyEngineDataRetention(ResourceBase, unittest.TestCase):
         "source_resource" : "demoResc"
     },
     "configuration" : {
+        "mode" : "trim_single_replica"
     }
 }
 }
@@ -223,8 +282,8 @@ OUTPUT ruleExecOut"""
                 with open(rule_file, 'w') as f:
                     f.write(rule)
 
-                with data_retention_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                with data_retention_trim_single_configured():
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Spec')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -238,7 +297,7 @@ OUTPUT ruleExecOut"""
 
             rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_retention",
     "parameters" : {
@@ -246,6 +305,7 @@ OUTPUT ruleExecOut"""
         "logical_path" : "/tempZone/home/rods/test_put_file"
     },
     "configuration" : {
+        "mode" : "remove_all_replicas"
     }
 }
 }
@@ -256,7 +316,7 @@ OUTPUT ruleExecOut"""
             with open(rule_file, 'w') as f:
                 f.write(rule)
 
-            with data_retention_configured():
+            with data_retention_remove_all_configured():
                 admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
                 admin_session.assert_icommand('ils -l ' + filename, 'STDERR_SINGLELINE', 'does not exist')
 
@@ -273,7 +333,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_retention",
     "parameters" : {
@@ -282,6 +342,7 @@ OUTPUT ruleExecOut"""
         "source_resource" : "AnotherResc"
     },
     "configuration" : {
+        "mode" : "trim_single_replica"
     }
 }
 }
@@ -292,7 +353,7 @@ OUTPUT ruleExecOut"""
                 with open(rule_file, 'w') as f:
                     f.write(rule)
 
-                with data_retention_configured():
+                with data_retention_trim_single_configured():
                     admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
@@ -302,16 +363,16 @@ OUTPUT ruleExecOut"""
 
     def test_event_handler_invocation_with_trim_single(self):
         with session.make_session_for_existing_admin() as admin_session:
-            with data_retention_configured():
+            with data_retention_trim_single_configured():
                 try:
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
-                    admin_session.assert_icommand('irepl -R TestResc ' + filename)
+                    admin_session.assert_icommand('irepl -R TestResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'TestResc')
-                    admin_session.assert_icommand('irepl -R demoResc ' + filename)
+                    admin_session.assert_icommand('irepl -R demoResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'demoResc')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -325,7 +386,7 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -335,7 +396,7 @@ OUTPUT ruleExecOut"""
     def test_event_handler_invocation_with_trim_single_preserve_replica(self):
         with session.make_session_for_existing_admin() as admin_session:
             admin_session.assert_icommand('imeta set -R AnotherResc irods::retention::preserve_replicas true')
-            with data_retention_configured():
+            with data_retention_trim_single_configured():
                 try:
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
@@ -358,7 +419,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -368,6 +429,7 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_retention",
               "configuration" : {
+                  "mode" : "trim_single_replica"
               }
          }
     }
@@ -379,8 +441,8 @@ OUTPUT ruleExecOut"""
                 with open(rule_file, 'w') as f:
                     f.write(rule)
 
-                with data_retention_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                with data_retention_trim_single_configured():
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Spec')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -396,7 +458,7 @@ OUTPUT ruleExecOut"""
 
             rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_query_processor",
     "parameters" : {
@@ -417,7 +479,7 @@ OUTPUT ruleExecOut"""
             with open(rule_file, 'w') as f:
                 f.write(rule)
 
-            with data_retention_configured():
+            with data_retention_remove_all_configured():
                 admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
                 admin_session.assert_icommand('ils -l ' + filename, 'STDERR_SINGLELINE', 'does not exist')
 
@@ -434,7 +496,7 @@ OUTPUT ruleExecOut"""
 #
 #                rule = """
 #{
-#"policy" : "irods_policy_execute_rule",
+#"policy_to_invoke" : "irods_policy_execute_rule",
 #"payload" : {
 #    "policy_to_invoke" : "irods_policy_query_processor",
 #    "parameters" : {
@@ -499,7 +561,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_retention",
     "parameters" : {

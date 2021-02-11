@@ -21,6 +21,7 @@ namespace {
     // clang-format off
     namespace pc                  = irods::policy_composition;
     namespace pe                  = irods::policy_composition::policy_engine;
+    namespace fs                  = irods::experimental::filesystem;
     using     string_vector       = std::vector<std::string>;
     using     string_tuple_vector = std::vector<std::tuple<std::string, std::string>>;
     // clang-format on
@@ -30,18 +31,53 @@ namespace {
         static const std::string trim_single{"trim_single_replica"};
     };
 
-    bool mode_is_supported(const std::string& m)
+    auto mode_is_supported(const std::string& m) -> bool
     {
         return (m == retention_mode::remove_all || m == retention_mode::trim_single);
     }
 
+    auto get_source_resource(
+          rsComm_t*          comm
+        , const std::string& logical_path
+        , const std::string& destination_resource) -> std::string
+    {
+        fs::path path{logical_path};
+        const auto coll_name = path.parent_path();
+        const auto data_name = path.object_name();
+
+        // query for list of all participating resources
+        auto qstr{boost::str(boost::format(
+                  "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s'")
+                  % coll_name.string()
+                  % data_name.string())};
+
+        irods::query qobj{comm, qstr};
+
+        // if there are more than two replicas and no source resource has been
+        // specificied, this is a usage error
+        if(qobj.size() > 2) {
+            THROW(SYS_INVALID_INPUT_PARAM,
+                  fmt::format("Multiple replicas found with no specified source resource for [{}]",
+                  logical_path));
+        }
+
+        for(auto&& rn : qobj) {
+            if(rn[0] != destination_resource) {
+                return rn[0];
+            }
+        }
+
+        THROW(SYS_INVALID_INPUT_PARAM,
+              fmt::format("No source replica found for [{}]",
+              logical_path));
+
+    } // get_source_resource
+
     auto get_replica_number_for_resource(
           rsComm_t*          comm
         , const std::string& logical_path
-        , const std::string& source_resource)
+        , const std::string& source_resource) -> std::string
     {
-        namespace fs = irods::experimental::filesystem;
-
         fs::path path{logical_path};
         const auto coll_name = path.parent_path();
         const auto data_name = path.object_name();
@@ -59,12 +95,12 @@ namespace {
 
     } // get_replica_number_for_resource
 
-    int remove_data_object(
+    auto remove_data_object(
           int                api_index
         , rsComm_t*          comm
         , const std::string& user_name
         , const std::string& logical_path
-        , const std::string& source_resource = {})
+        , const std::string& source_resource = {}) -> int
     {
         dataObjInp_t obj_inp{};
         memset(&obj_inp, 0, sizeof(obj_inp));
@@ -76,13 +112,11 @@ namespace {
 
         addKeyVal(&obj_inp.condInput, COPIES_KW, "1" );
 
-        std::string hier{}, repl_num{};
+        std::string repl_num{};
+
         if(!source_resource.empty()) {
             repl_num = get_replica_number_for_resource(comm, logical_path, source_resource);
             addKeyVal(&obj_inp.condInput, REPL_NUM_KW, repl_num.c_str());
-
-            irods::error err = resc_mgr.get_hier_to_root_for_resc(source_resource, hier);
-            addKeyVal(&obj_inp.condInput, RESC_HIER_STR_KW, hier.c_str());
         }
 
         auto trim_fcn = [&](auto& comm) {
@@ -93,7 +127,7 @@ namespace {
 
     } // remove_data_object
 
-    auto get_leaf_resources_for_object(rsComm_t* comm, const std::string& logical_path)
+    auto get_leaf_resources_for_object(rsComm_t* comm, const std::string& logical_path) -> string_vector
     {
         namespace fs = irods::experimental::filesystem;
 
@@ -121,13 +155,14 @@ namespace {
     auto get_leaf_resource_for_root(
         rsComm_t* comm
       , const std::string& source_resource
-      , const std::string& logical_path)
+      , const std::string& logical_path) -> std::string
     {
         namespace fs = irods::experimental::filesystem;
 
         fs::path path{logical_path};
         const auto coll_name = path.parent_path();
         const auto data_name = path.object_name();
+
 
         auto leaf_bundle = pe::compute_leaf_bundle(source_resource);
 
@@ -328,8 +363,21 @@ namespace {
         }
         // trim single replica
         else {
+            if(source_resource.empty()) {
+                source_resource = get_source_resource(comm, logical_path, destination_resource);
+            }
+
             if(object_can_be_trimmed(comm, attribute, source_resource, whitelist)) {
-                auto leaf_name = get_leaf_resource_for_root(comm, source_resource, logical_path);
+
+                auto leaf_name = std::string{};
+
+                if(source_resource.empty()) {
+                    leaf_name = source_resource;
+                }
+                else {
+                    leaf_name = get_leaf_resource_for_root(comm, source_resource, logical_path);
+                }
+
                 if(log_actions) {
                     std::cout << "irods_policy_data_retention :: trimming single replica ["
                               << logical_path << "] from [" << leaf_name << "] as user [" << user_name << "]\n";

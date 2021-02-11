@@ -38,7 +38,7 @@ def query_processor_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
-                            "policy"    : "irods_policy_access_time",
+                            "policy_to_invoke"    : "irods_policy_access_time",
                             "configuration" : {
                             }
                         }
@@ -105,7 +105,7 @@ class TestPolicyEngineQueryProcessor(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -145,7 +145,7 @@ OUTPUT ruleExecOut"""
                     sleep(10)
                     rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -187,12 +187,12 @@ OUTPUT ruleExecOut
                     sleep(10)
                     rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "source_resource" : "demoResc",
-              "lifetime" : "IRODS_TOKEN_QUERY_SUBSTITUTION(SELECT META_RESC_ATTR_VALUE WHERE META_RESC_ATTR_NAME = 'irods::testing::time' AND RESC_NAME = 'IRODS_TOKEN_SOURCE_RESOURCE')",
+              "lifetime" : "IRODS_TOKEN_QUERY_SUBSTITUTION_END_TOKEN(SELECT META_RESC_ATTR_VALUE WHERE META_RESC_ATTR_NAME = 'irods::testing::time' AND RESC_NAME = 'IRODS_TOKEN_SOURCE_RESOURCE')",
               "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file' AND META_DATA_ATTR_NAME = 'irods::access_time' AND META_DATA_ATTR_VALUE < 'IRODS_TOKEN_LIFETIME'",
               "query_limit" : 1,
               "query_type" : "general",
@@ -230,7 +230,7 @@ OUTPUT ruleExecOut
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -271,7 +271,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {

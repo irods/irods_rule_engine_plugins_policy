@@ -4,12 +4,12 @@
 #include "policy_composition_framework_configuration_manager.hpp"
 #include "data_verification_utilities.hpp"
 
-
 namespace {
 
     // clang-format off
     namespace pc   = irods::policy_composition;
     namespace pe   = irods::policy_composition::policy_engine;
+    namespace fs   = irods::experimental::filesystem;
     using     json = nlohmann::json;
     // clang-format on
 
@@ -19,8 +19,68 @@ namespace {
         static const std::string checksum("checksum");
     }
 
+    auto get_alternate_resource(
+          rsComm_t*          comm
+        , const std::string& logical_path
+        , const std::string& destination_resource) -> std::string
+    {
+        fs::path path{logical_path};
+        const auto coll_name = path.parent_path();
+        const auto data_name = path.object_name();
+
+        // query for list of all participating resources
+        auto qstr{boost::str(boost::format(
+                  "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s'")
+                  % coll_name.string()
+                  % data_name.string())};
+
+        irods::query qobj{comm, qstr};
+
+        for(auto&& rn : qobj) {
+            if(rn[0] != destination_resource) {
+                return rn[0];
+            }
+        }
+
+        THROW(SYS_INVALID_INPUT_PARAM,
+              fmt::format("No alternate replica found for [{}]",
+              logical_path));
+
+    } // get_alternate_resource
+
+    auto determine_source_and_destiation(
+        rsComm_t*          _comm,
+        const std::string& _logical_path,
+        const std::string& _source_resource,
+        const std::string& _destination_resource)
+    {
+        auto src_flg = _source_resource.empty();
+        auto dst_flg = _destination_resource.empty();
+
+        if(src_flg && dst_flg) {
+            THROW(SYS_INVALID_INPUT_PARAM,
+                  "source and destination resources cannot be empty");
+        }
+
+        auto src = _source_resource;
+        auto dst = _destination_resource;
+
+        if(src_flg) {
+            src = get_alternate_resource(_comm, _logical_path, _destination_resource);
+        }
+
+        if(dst_flg) {
+            dst = src;
+            src = get_alternate_resource(_comm, _logical_path, _source_resource);
+        }
+
+        return std::make_tuple(src, dst);
+
+    } // determine_source_and_destiation
+
     irods::error data_verification_policy(const pe::context& ctx, pe::arg_type out)
     {
+        auto comm        = ctx.rei->rsComm;
         auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
 
         if(log_actions) {
@@ -34,18 +94,15 @@ namespace {
         std::tie(user_name, logical_path, source_resource, destination_resource) =
             capture_parameters(ctx.parameters, tag_first_resc);
 
-        // may be statically configured
-        source_resource = cfg_mgr.get("source_resource", source_resource);
-
         if(source_resource.empty()) {
-            return ERROR(
-                       SYS_INVALID_INPUT_PARAM,
-                       "irods_policy_data_verification :: source_resource is not specified");
+            // may be statically configured
+            source_resource = cfg_mgr.get("source_resource", source_resource);
         }
 
-        auto attribute = cfg_mgr.get("attribute", "irods::verification::type");
+        std::tie(source_resource, destination_resource) =
+            determine_source_and_destiation(comm, logical_path, source_resource, destination_resource);
 
-        auto comm = ctx.rei->rsComm;
+        auto attribute = cfg_mgr.get("attribute", "irods::verification::type");
 
         std::tie(type, units) = get_metadata_for_resource(comm, attribute, destination_resource);
 

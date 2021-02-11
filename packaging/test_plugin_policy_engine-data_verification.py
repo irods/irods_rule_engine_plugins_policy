@@ -38,7 +38,7 @@ def data_verification_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["replication"],
-                            "policy"    : "irods_policy_data_verification",
+                            "policy_to_invoke"    : "irods_policy_data_verification",
                             "configuration" : {
                             }
                         }
@@ -93,10 +93,10 @@ def data_verification_alternate_attributes_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["replication"],
-                            "policy"    : "irods_policy_data_verification",
+                            "policy_to_invoke"    : "irods_policy_data_verification",
                             "configuration" : {
                                 "log_errors" : "true",
-                                "attribute"  : "event_handler_attribute"
+                                "attribute"  : "event_handler_attribute",
                             }
                         }
                     ]
@@ -151,13 +151,12 @@ class TestPolicyEngineDataVerification(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -189,13 +188,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -227,13 +225,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -266,13 +263,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -308,13 +304,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -347,13 +342,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "demoResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
@@ -476,7 +470,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -486,7 +480,6 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_verification",
               "configuration" : {
-                  "source_resource" : "demoResc"
               }
          }
     }
@@ -506,7 +499,7 @@ OUTPUT ruleExecOut"""
 
 
 
-    def test_query_invocation_verify_catalog_mising_source_resource(self):
+    def test_query_invocation_verify_catalog_missing_source_resource(self):
         with session.make_session_for_existing_admin() as admin_session:
             try:
                 filename = 'test_put_file'
@@ -518,7 +511,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -540,7 +533,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'source_resource')
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -559,7 +552,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -569,7 +562,6 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_verification",
               "configuration" : {
-                  "source_resource" : "demoResc"
               }
          }
     }
@@ -605,7 +597,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -615,7 +607,6 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_verification",
               "configuration" : {
-                  "source_resource" : "demoResc"
               }
          }
     }
@@ -647,7 +638,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -657,7 +648,6 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_verification",
               "configuration" : {
-                  "source_resource" : "demoResc"
               }
          }
     }
@@ -693,7 +683,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -703,7 +693,6 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_verification",
               "configuration" : {
-                  "source_resource" : "demoResc"
               }
          }
     }
@@ -734,13 +723,12 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_verification",
     "parameters" : {
         "user_name" : "rods",
         "logical_path" : "/tempZone/home/rods/test_put_file",
-        "source_resource" : "AnotherResc",
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {

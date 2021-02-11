@@ -137,13 +137,14 @@ namespace irods::policy_composition::policy_engine {
 
     template<typename T>
     auto perform_query_substitution(
-          rsComm_t& comm
-        , const json& param
+          rsComm_t&                       comm
+        , const json&                     param
         , const std::vector<std::string>& values) -> T
     {
-        const std::string delim{")"};
-        auto str =  param.get<std::string>();
+        const auto delim = std::string{")"};
+        auto str = param.get<std::string>();
         auto p0  = str.find(tokens::query_substitution);
+
         if(p0 == std::string::npos) {
             return T{};
         }
@@ -170,7 +171,7 @@ namespace irods::policy_composition::policy_engine {
     } // perform_query_substitution
 
     void replace_query_string_token(
-          std::string& query_string
+          std::string&       query_string
         , const std::string& token
         , const std::string& value)
     {
@@ -195,7 +196,7 @@ namespace irods::policy_composition::policy_engine {
 
     template<typename T>
     void replace_query_string_token(
-          std::string& query_string
+          std::string&      query_string
         , const std::string token
         , T value)
     {

@@ -107,7 +107,7 @@ def data_movement_configured_with_event_handler(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put"],
-                            "policy"    : "irods_policy_data_replication",
+                            "policy_to_invoke"    : "irods_policy_data_replication",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
                             }
@@ -196,7 +196,7 @@ class TestPolicyEngineDataMovement(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_movement",
     "parameters" : {
@@ -206,6 +206,7 @@ class TestPolicyEngineDataMovement(ResourceBase, unittest.TestCase):
         "destination_resource" : "AnotherResc"
     },
     "configuration" : {
+        "mode" : "trim_single_replica"
     }
 }
 }
@@ -217,7 +218,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_movement_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Specifying')
                     admin_session.assert_icommand('ils -l', 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -233,7 +234,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-"policy" : "irods_policy_execute_rule",
+"policy_to_invoke" : "irods_policy_execute_rule",
 "payload" : {
     "policy_to_invoke" : "irods_policy_data_movement",
     "parameters" : {
@@ -242,6 +243,7 @@ OUTPUT ruleExecOut"""
         "source_resource" : "demoResc"
     },
     "configuration" : {
+        "mode" : "trim_single_replica",
         "source_to_destination_map" : {
             "demoResc" : "AnotherResc"
         }
@@ -256,7 +258,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_movement_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Specifying')
                     admin_session.assert_icommand('ils -l', 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -286,7 +288,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -296,6 +298,7 @@ OUTPUT ruleExecOut"""
               "number_of_threads" : 1,
               "policy_to_invoke" : "irods_policy_data_movement",
               "configuration" : {
+                  "mode" : "trim_single_replica",
                   "destination_resource" : "AnotherResc"
               }
          }
@@ -309,7 +312,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_movement_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Specifying')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)

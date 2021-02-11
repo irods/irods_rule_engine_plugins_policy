@@ -38,7 +38,7 @@ def access_time_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
-                            "policy"    : "irods_policy_access_time",
+                            "policy_to_invoke"    : "irods_policy_access_time",
                             "configuration" : {
                             }
                         }
@@ -91,7 +91,7 @@ def access_time_alternate_attributes_configured(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
-                            "policy"    : "irods_policy_access_time",
+                            "policy_to_invoke"    : "irods_policy_access_time",
                             "configuration" : {
                                 "attribute"  : "event_handler_attribute"
                             }
@@ -148,7 +148,7 @@ class TestPolicyEngineAccessTime(ResourceBase, unittest.TestCase):
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
@@ -198,7 +198,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
@@ -206,10 +206,10 @@ OUTPUT ruleExecOut"""
               "query_limit" : 10,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_access_time",
-              "configuration" : {
-              }
-         }
+              "policy_to_invoke" : "irods_policy_access_time"
+        },
+        "configuration" : {
+        }
     }
 }
 INPUT null
@@ -237,7 +237,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
@@ -271,7 +271,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_access_time",
         "parameters" : {
@@ -321,7 +321,7 @@ OUTPUT ruleExecOut"""
 
                 rule = """
 {
-    "policy" : "irods_policy_execute_rule",
+    "policy_to_invoke" : "irods_policy_execute_rule",
     "payload" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {

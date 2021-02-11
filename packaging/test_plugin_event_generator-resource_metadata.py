@@ -39,7 +39,7 @@ def object_event_handler_configured(arg=None):
                         {
                             "active_policy_clauses" : ["post"],
                             "events" : ["put"],
-                            "policy"    : "irods_policy_event_delegate_collection_metadata",
+                            "policy_to_invoke"    : "irods_policy_event_delegate_collection_metadata",
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
@@ -50,7 +50,7 @@ def object_event_handler_configured(arg=None):
                                                 "units"     : "irods::testing::units"
                                             }
                                         },
-                                        "policy"    : "irods_policy_testing_policy",
+                                        "policy_to_invoke"    : "irods_policy_testing_policy",
                                         "configuration" : {
                                         }
 
@@ -110,7 +110,7 @@ def metadata_event_handler_configured(arg=None):
                         {
                             "active_policy_clauses" : ["post"],
                             "events" : ["metadata"],
-                            "policy"    : "irods_policy_event_delegate_collection_metadata",
+                            "policy_to_invoke"    : "irods_policy_event_delegate_collection_metadata",
                             "configuration" : {
                                 "policies_to_invoke" : [
                                     {
@@ -121,7 +121,7 @@ def metadata_event_handler_configured(arg=None):
                                                 "units"     : "irods::testing::units"
                                             }
                                         },
-                                        "policy"    : "irods_policy_testing_policy",
+                                        "policy_to_invoke"    : "irods_policy_testing_policy",
                                         "configuration" : {
                                         }
 

@@ -42,7 +42,7 @@ def event_handler_configured(arg=None):
                             },
                             "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "register", "unregister", "replication", "checksum", "copy", "seek", "truncate", "open", "close"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }
@@ -89,7 +89,7 @@ def event_handler_configured_fail_conditional(arg=None):
                             },
                             "active_policy_clauses" : ["post"],
                             "events" : ["put", "get", "create", "read", "write", "rename", "register", "unregister", "replication", "checksum", "copy", "seek", "truncate"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }
@@ -148,7 +148,7 @@ def event_handler_recurisve_collection_metadata_exists(arg=None):
                                         "write", "rename", "register", "unregister",
                                         "replication", "checksum", "copy", "seek",
                                         "truncate", "open", "close"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }
@@ -206,7 +206,7 @@ def event_handler_user_metadata_exists(arg=None):
                                         "write", "rename", "register", "unregister",
                                         "replication", "checksum", "copy", "seek",
                                         "truncate", "open", "close"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }
@@ -264,7 +264,7 @@ def event_handler_resource_metadata_exists(arg=None):
                                         "write", "rename", "register", "unregister",
                                         "replication", "checksum", "copy", "seek",
                                         "truncate", "open", "close"],
-                            "policy"    : "irods_policy_testing_policy",
+                            "policy_to_invoke"    : "irods_policy_testing_policy",
                             "configuration" : {
                             }
                         }
