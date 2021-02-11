@@ -14,8 +14,9 @@
 namespace {
 
     // clang-format off
-    namespace pe   = irods::policy_composition::policy_engine;
     namespace pc   = irods::policy_composition;
+    namespace kw   = irods::policy_composition::keywords;
+    namespace pe   = irods::policy_composition::policy_engine;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
     // clang-format on
@@ -89,8 +90,8 @@ namespace {
             using result_row = irods::query_processor<rsComm_t>::result_row;
 
             json params_to_pass{};
-            if(ctx.parameters.contains("parameters")) {
-                params_to_pass = ctx.parameters.at("parameters");
+            if(ctx.parameters.contains(kw::parameters)) {
+                params_to_pass = ctx.parameters.at(kw::parameters);
             }
             else {
                 params_to_pass = ctx.parameters;
@@ -105,8 +106,8 @@ namespace {
                 std::string params_str = params_to_pass.dump(4);
 
                 std::string config_str{}, out_str{};
-                if(ctx.parameters.contains("configuration")) {
-                   config_str = ctx.parameters.at("configuration").dump(4);
+                if(ctx.parameters.contains(kw::configuration)) {
+                   config_str = ctx.parameters.at(kw::configuration).dump(4);
                 }
 
                 std::list<boost::any> arguments;

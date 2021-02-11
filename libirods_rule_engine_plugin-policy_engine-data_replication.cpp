@@ -13,6 +13,7 @@ namespace {
 
     // clang-format off
     namespace pc   = irods::policy_composition;
+    namespace kw   = irods::policy_composition::keywords;
     namespace pe   = irods::policy_composition::policy_engine;
     using     json = nlohmann::json;
     // clang-format on

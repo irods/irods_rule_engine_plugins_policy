@@ -7,8 +7,9 @@
 namespace {
 
     // clang-format off
-    namespace pe  = irods::policy_composition::policy_engine;
-    namespace ipc = irods::policy_composition;
+    namespace pc = irods::policy_composition;
+    namespace kw = irods::policy_composition::keywords;
+    namespace pe = irods::policy_composition::policy_engine;
     // clang-format on
 
     using invoke_policy_type = std::function<void(ruleExecInfo_t*, const std::string&, std::list<boost::any>)>;
@@ -23,7 +24,7 @@ namespace {
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
         args.push_back(boost::any(_out));
-        ipc::invoke_policy(_rei, "irods_policy_data_replication", args);
+        pc::invoke_policy(_rei, "irods_policy_data_replication", args);
 
     } // apply_data_replication_policy
 
@@ -37,7 +38,7 @@ namespace {
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
         args.push_back(boost::any(_out));
-        ipc::invoke_policy(_rei, "irods_policy_data_verification", args);
+        pc::invoke_policy(_rei, "irods_policy_data_verification", args);
 
     } // apply_data_verification_policy
 
@@ -51,7 +52,7 @@ namespace {
         args.push_back(boost::any(_parameters));
         args.push_back(boost::any(_configuration));
         args.push_back(boost::any(_out));
-        ipc::invoke_policy(_rei, "irods_policy_data_retention", args);
+        pc::invoke_policy(_rei, "irods_policy_data_retention", args);
 
     } // apply_data_retention_policy
 
@@ -65,7 +66,7 @@ namespace {
             capture_parameters(_ctx.parameters, tag_first_resc);
 
         if(destination_resource.empty()) {
-            destination_resource = cfg_mgr.get("destination_resource", "");
+            destination_resource = cfg_mgr.get(kw::destination_resource, "");
             if(destination_resource.empty()) {
                 auto source_to_destination_map = cfg_mgr.get("source_to_destination_map", json::array());
 
@@ -86,10 +87,10 @@ namespace {
         }
 
         nlohmann::json params = {
-              { "user_name", user_name }
-            , { "logical_path", logical_path }
-            , { "source_resource", source_resource }
-            , { "destination_resource", destination_resource }
+              { kw::user_name, user_name }
+            , { kw::logical_path, logical_path }
+            , { kw::source_resource, source_resource }
+            , { kw::destination_resource, destination_resource }
         };
 
         auto pstr = params.dump();

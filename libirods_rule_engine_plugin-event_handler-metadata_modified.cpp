@@ -8,9 +8,10 @@ namespace {
 
     // clang-format off
     using     json = nlohmann::json;
-    namespace eh   = irods::policy_composition::event_handler;
     namespace pc   = irods::policy_composition;
     namespace xm   = irods::experimental::metadata;
+    namespace kw   = irods::policy_composition::keywords;
+    namespace eh   = irods::policy_composition::event_handler;
     // clang-format on
 
     auto metadata_modified(
@@ -21,10 +22,10 @@ namespace {
         const std::string event{"METADATA"};
 
         const std::map<xm::entity_type, std::string> to_variable {
-              {xm::entity_type::collection,  "logical_path"}
-            , {xm::entity_type::data_object, "logical_path"}
-            , {xm::entity_type::user,        "user_name"}
-            , {xm::entity_type::resource,    "source_resource"}
+              {xm::entity_type::collection,  kw::logical_path}
+            , {xm::entity_type::data_object, kw::logical_path}
+            , {xm::entity_type::user,        kw::user_name}
+            , {xm::entity_type::resource,    kw::source_resource}
         };
 
         auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);
@@ -42,19 +43,19 @@ namespace {
         const auto var{to_variable.at(et)};
 
         json obj{};
-        obj["event"] = event;
+        obj[kw::event] = event;
         obj[var] = inp->arg2;
-        obj["metadata"] = {
-            {"comm",        comm},
-            {"entity_type", xm::to_entity_string(et)},
-            {"operation",   inp->arg0},
-            {"entity",      inp->arg2},
-            {"attribute",   inp->arg3},
-            {"value",       inp->arg4},
-            {"units",       inp->arg5}
+        obj[kw::metadata] = {
+            {kw::comm,        comm},
+            {kw::entity_type, xm::to_entity_string(et)},
+            {kw::operation,   inp->arg0},
+            {kw::entity,      inp->arg2},
+            {kw::attribute,   inp->arg3},
+            {kw::value,       inp->arg4},
+            {kw::units,       inp->arg5}
         };
 
-        obj["policy_enforcement_point"] = _rule_name;
+        obj[kw::policy_enforcement_point] = _rule_name;
 
         return std::make_tuple(event, obj);
 

@@ -3,8 +3,9 @@
 namespace {
     // clang-format off
     using     json = nlohmann::json;
-    namespace eh   = irods::policy_composition::event_handler;
     namespace pc   = irods::policy_composition;
+    namespace kw   = irods::policy_composition::keywords;
+    namespace eh   = irods::policy_composition::event_handler;
     // clang-format on
 
     const pc::event_map_type p2e{
@@ -35,9 +36,9 @@ namespace {
             return op;
         }();
 
-        obj["policy_enforcement_point"] = _rule_name;
-        obj["event"] = event;
-        obj["comm"]  = comm;
+        obj[kw::policy_enforcement_point] = _rule_name;
+        obj[kw::event] = event;
+        obj[kw::comm]  = comm;
 
         return std::make_tuple(event, obj);
 
@@ -54,9 +55,9 @@ namespace {
         const auto event{pc::pep_to_event(p2e, _rule_name)};
 
         auto obj = pc::serialize_collInp_to_json(*inp);
-        obj["policy_enforcement_point"] = _rule_name;
-        obj["event"] = event;
-        obj["comm"]  = pc::serialize_rsComm_to_json(_rei->rsComm);
+        obj[kw::policy_enforcement_point] = _rule_name;
+        obj[kw::event] = event;
+        obj[kw::comm]  = pc::serialize_rsComm_to_json(_rei->rsComm);
 
         return std::make_tuple(event, obj);
 
