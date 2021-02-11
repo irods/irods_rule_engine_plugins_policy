@@ -5,53 +5,43 @@
 
 #include "rsModAVUMetadata.hpp"
 
+#define IRODS_METADATA_ENABLE_SERVER_SIDE_API
+#include "metadata.hpp"
+
+#include "policy_composition_framework_event_handler.hpp"
+
 namespace {
 
     // clang-format off
     namespace pc   = irods::policy_composition;
+    namespace kw   = irods::policy_composition::keywords;
     namespace pe   = irods::policy_composition::policy_engine;
     namespace fs   = irods::experimental::filesystem;
     namespace fsvr = irods::experimental::filesystem::server;
     using     json = nlohmann::json;
     // clang-format on
 
-    auto entity_type_to_option(const std::string& _type)
-    {
-        if("data_object" == _type) {
-            return "-d";
-        }
-        else if("collection" == _type) {
-            return "-C";
-        }
-        else if("user" == _type) {
-            return "-u";
-        }
-        else if("resource" == _type) {
-            return "-R";
-        }
-        else {
-            return "unsupported";
-        }
-    } // entity_type_to_option
+    const std::map<std::string, std::string> type_to_token {
+        {kw::collection,  "-C"},
+        {kw::data_object, "-d"},
+        {kw::user,        "-u"},
+        {kw::resource,    "-R"}
+    };
 
-    auto entity_type_to_target(const std::string& _type, json _params)
+    auto type_to_entity(const std::string& _type, json _params)
     {
-        if("data_object" == _type) {
-            return _params.at("logical_path").get<std::string>();
-        }
-        else if("collection" == _type) {
-            return _params.at("logical_path").get<std::string>();
-        }
-        else if("user" == _type) {
-            return _params.at("user_name").get<std::string>();
-        }
-        else if("resource" == _type) {
-            return _params.at("source_resource").get<std::string>();
-        }
-        else {
-            return std::string{"unsupported"};
-        }
-    } // entity_type_to_option
+        const std::map<std::string, std::string> type_to_index {
+            {kw::collection,  kw::logical_path},
+            {kw::data_object, kw::logical_path},
+            {kw::user,        kw::user_name},
+            {kw::resource,    kw::source_resource}
+        };
+
+        auto idx = type_to_index.at(_type);
+
+        return _params.at(idx).get<std::string>();
+
+    } // type_to_entity
 
     irods::error testing_policy(const pe::context& ctx, pe::arg_type out)
     {
@@ -79,23 +69,23 @@ namespace {
         auto comm  = ctx.rei->rsComm;
 
         std::string event{"unspecified"};
-        if(ctx.parameters.contains("event")) {
-            event = ctx.parameters.at("event");
+        if(ctx.parameters.contains(kw::event)) {
+            event = ctx.parameters.at(kw::event);
         }
 
         std::string entity_type, option, target;
         modAVUMetadataInp_t set_op{};
         if("METADATA" == event) {
-            if(ctx.parameters.contains("conditional")) {
-                if(ctx.parameters.contains("metadata")) {
-                    if(ctx.parameters.at("conditional").at("metadata").contains("entity_type")) {
-                        entity_type = ctx.parameters.at("conditional").at("metadata").at("entity_type");
+            if(ctx.parameters.contains(kw::conditional)) {
+                if(ctx.parameters.contains(kw::metadata)) {
+                    if(ctx.parameters.at(kw::conditional).at(kw::metadata).contains(kw::entity_type)) {
+                        entity_type = ctx.parameters.at(kw::conditional).at(kw::metadata).at(kw::entity_type);
                     }
                 }
             }
-            else if(ctx.parameters.contains("metadata")) {
-                if(ctx.parameters.at("metadata").contains("entity_type")) {
-                    entity_type = ctx.parameters.at("metadata").at("entity_type");
+            else if(ctx.parameters.contains(kw::metadata)) {
+                if(ctx.parameters.at(kw::metadata).contains(kw::entity_type)) {
+                    entity_type = ctx.parameters.at(kw::metadata).at(kw::entity_type);
                 }
             }
             else {
@@ -104,8 +94,8 @@ namespace {
                         "testing_policy :: missing 'entity_type' in 'metadata'");
             }
 
-            option = entity_type_to_option(entity_type);
-            target = entity_type_to_target(entity_type, ctx.parameters);
+            option = type_to_token.at(entity_type);
+            target = type_to_entity(entity_type, ctx.parameters);
         }
         else if(!logical_path.empty()) {
             target = logical_path;

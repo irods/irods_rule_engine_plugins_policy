@@ -12,8 +12,9 @@ extern l1desc_t L1desc[NUM_L1_DESC];
 namespace {
     // clang-format off
     using     json = nlohmann::json;
-    namespace eh   = irods::policy_composition::event_handler;
     namespace pc   = irods::policy_composition;
+    namespace kw   = irods::policy_composition::keywords;
+    namespace eh   = irods::policy_composition::event_handler;
     // clang-format on
 
     const std::map<std::string, std::string> p2e {
@@ -76,11 +77,11 @@ namespace {
 
             auto obj = pc::serialize_dataObjInp_to_json(inp);
 
-            obj["policy_enforcement_point"] = _rule_name;
-            obj["event"] = event;
-            obj["comm"]  = comm;
+            obj[kw::policy_enforcement_point] = _rule_name;
+            obj[kw::event] = event;
+            obj[kw::comm]  = comm;
 
-            auto p2i = eh::configuration->plugin_configuration.at("policies_to_invoke");
+            auto p2i = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
 
             pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
 
@@ -131,18 +132,18 @@ namespace {
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
-        auto p2i = eh::configuration->plugin_configuration.at("policies_to_invoke");
+        auto p2i = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
 
         json src = pc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
-        src["policy_enforcement_point"] = _rule_name;
-        src["event"] = event;
-        src["comm"]  = comm;
+        src[kw::policy_enforcement_point] = _rule_name;
+        src[kw::event] = event;
+        src[kw::comm]  = comm;
         pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
 
         json dst = pc::serialize_dataObjInp_to_json(inp->destDataObjInp);
-        dst["policy_enforcement_point"] = _rule_name;
-        dst["event"] = event;
-        dst["comm"]  = comm;
+        dst[kw::policy_enforcement_point] = _rule_name;
+        dst[kw::event] = event;
+        dst[kw::comm]  = comm;
         pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
 
         return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
@@ -169,9 +170,9 @@ namespace {
             return op;
         }();
 
-        obj["policy_enforcement_point"] = _rule_name;
-        obj["event"] = event;
-        obj["comm"]  = comm;
+        obj[kw::policy_enforcement_point] = _rule_name;
+        obj[kw::event] = event;
+        obj[kw::comm]  = comm;
 
         return std::make_tuple(event, obj);
 
@@ -202,7 +203,7 @@ namespace {
         }
 
         if(inp->openFlags & O_TRUNC) {
-            obj["event"] = "TRUNCATE";
+            obj[kw::event] = "TRUNCATE";
             return std::make_tuple(std::string{"TRUNCATE"}, obj);
         }
 
@@ -244,15 +245,15 @@ namespace {
 
 
         const auto event = [&]() -> const std::string {
-            if     ("CREATE" == hierarchy_resolution_operation)              return "PUT";
-            else if("OPEN" == hierarchy_resolution_operation && write_flag)  return "WRITE";
-            else if("OPEN" == hierarchy_resolution_operation && !write_flag) return "GET";
+            if     ("CREATE" == hierarchy_resolution_operation)                return "PUT";
+            else if("OPEN"   == hierarchy_resolution_operation && write_flag)  return "WRITE";
+            else if("OPEN"   == hierarchy_resolution_operation && !write_flag) return "GET";
             else return hierarchy_resolution_operation;
         }();
 
-        obj["policy_enforcement_point"] = _rule_name;
-        obj["event"] = event;
-        obj["comm"]  = comm;
+        obj[kw::policy_enforcement_point] = _rule_name;
+        obj[kw::event] = event;
+        obj[kw::comm]  = comm;
 
         return std::make_tuple(event, obj);
 
@@ -275,9 +276,9 @@ namespace {
             return op;
         }();
 
-        obj["policy_enforcement_point"] = _rule_name;
-        obj["event"] = event;
-        obj["comm"]  = comm;
+        obj[kw::policy_enforcement_point] = _rule_name;
+        obj[kw::event] = event;
+        obj[kw::comm]  = comm;
 
         return std::make_tuple(event, obj);
 

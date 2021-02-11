@@ -20,8 +20,9 @@ namespace {
 
     // clang-format off
     namespace pc                  = irods::policy_composition;
-    namespace pe                  = irods::policy_composition::policy_engine;
     namespace fs                  = irods::experimental::filesystem;
+    namespace kw                  = irods::policy_composition::keywords;
+    namespace pe                  = irods::policy_composition::policy_engine;
     using     string_vector       = std::vector<std::string>;
     using     string_tuple_vector = std::vector<std::tuple<std::string, std::string>>;
     // clang-format on
@@ -309,7 +310,7 @@ namespace {
 
         auto comm      = ctx.rei->rsComm;
         auto whitelist = cfg_mgr.get("resource_white_list", json::array());
-        auto attribute = cfg_mgr.get("attribute", "irods::retention::preserve_replicas");
+        auto attribute = cfg_mgr.get(kw::attribute, "irods::retention::preserve_replicas");
 
         if(mode == retention_mode::remove_all) {
             auto [unlink, resources_to_remove] =
