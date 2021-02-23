@@ -1,13 +1,15 @@
 ## Motivation
 
-The process for creating and deploying policy for iRODS requires the rule author to have a complete understanding of the API for iRODS as well as the associated plugin architecture in order to properly leverage the dynamic policy enforcement.  The author will also need to trigger the same policy in multiple ways in order to cover all possible means to move data into iRODS for both object and POSIX data movement.  The goal of this framework is to streamline the craft and deployment of policy, as well as provide a reusable body of policy that may be easily configured.  Policy should now be a matter of configuration and not specifically crafted code which may follow a documented means of deployment for most use cases.
+The process for creating and deploying policy for iRODS requires the rule author to have a complete understanding of the API for iRODS as well as the associated plugin architecture in order to properly leverage the dynamic policy enforcement.  The author will may need to invoke the same policy across several policy enforcement points in order to cover all possible means to move data into iRODS for both object and POSIX data movement.  The goal of this framework is to streamline the crafting and deployment of policy, as well as provide a reusable body of policy that may be easily configured.  Policy should now be a matter of configuration and not hand crafted code which may follow a documented means of deployment for most use cases.
+
+![policy_graphic](policylayer_graphic_uniq.png)
 
 ## The Policy Interface
 
-All policy to be invoked by this system must conform to a simple interface of two parameters which are serialized JSON strings, the parameters and the configuration.  This policy may be implemented in any rule language or as a simple rule engine plugin.
+All policy to be invoked by this system must conform to a simple interface of two parameters which are serialized JSON strings, known as the `parameters` and the `configuration`.  This policy may be implemented in any rule language or as a simple rule engine plugin.
 
 For example, in the iRODS Rule Language
-```ruby
+```c++
 irods_policy_example_policy_implementation(*parameters, *configuration) {
     writeLine("stdout", "Hello, World!")
 }
@@ -35,67 +37,88 @@ The complete list is:
   * Resources
   * Users and Groups
 
-## Data Object Modified Event Handler
-
-The Data Object event handler unifies both the Object and POSIX semantics, as well as other iRODS specific operations such as registration, into a single point of truth for invoking policy related to data access.  The plugin maps policy enforcement points to specific set of event for which policy may be configured.  For example:
-
-```cpp
- pep_api_bulk_data_obj_put_pre        "CREATE"
- pep_api_data_obj_chksum_pre          "CHECKSUM"
- pep_api_data_obj_copy_pre            "COPY"
- pep_api_data_obj_create_and_stat_pre "CREATE"
- pep_api_data_obj_create_pre          "CREATE"
- pep_api_data_obj_get_pre             "GET"
- pep_api_data_obj_lseek_pre           "SEEK"
- pep_api_data_obj_phymv_pre           "REPLICATION"
- pep_api_data_obj_put_pre             "PUT"
- pep_api_data_obj_rename_pre          "RENAME"
- pep_api_data_obj_repl_pre            "REPLICATION",
- pep_api_data_obj_trim_pre            "TRIM"
- pep_api_data_obj_truncate_pre        "TRUNCATE"
- pep_api_data_obj_unlink_pre          "UNLINK"
- pep_api_phy_path_reg_pre             "REGISTER"
-```
-
-![policy_graphic](policylayer_graphic_uniq.png)
-
-The policy to be invoke is a matter of the plugin specific configuration within `/etc/irods/server_config.json` for a given instance of an event handler.  The "plugin_specific_configuration" object for the given instance will look for a JSON array "policies_to_invoke", which itself is a series of JSON objects.  These objects are the configuration of a policy to invoke for a given series of events.  The policy objects contain:
+The policy to be invoked is a matter of the plugin specific configuration within `/etc/irods/server_config.json` for a given instance of an event handler.  The `"plugin_specific_configuration"` object for the given instance will look for a JSON array `"policies_to_invoke"`, which itself is a series of JSON objects.  These objects are the configuration of a policy to invoke for a given series of events.  The policy objects contain:
   * conditional
   * active_policy_clauses
   * events
-  * policy
+  * policy_to_invoke
 
 ### Conditional
-A conditional describes a set of conditions which must be met in order to invoke the policy.  These are a series of regular expressions which match the nouns involved.  This could be the `logical_path`, `metadata`, `user_name`, `source_resource`, or `destination_resource`.  A complete example might be:
+A conditional describes a set of conditions which must be met in order to invoke the policy.  These are a series of regular expressions which match the nouns involved.  This could be the `logical_path`, `metadata_applied`, `metadata_exists`, `user_name`, `source_resource`, or `destination_resource`.  The metadata conditionals are separated into two flavors, one for the application of metadata and one for invoking policy based on the existence of metadata.  The `metadata_exists` conditional will test for the existence of matching metadata on any `entity_type` configured.  The "entity_type" for the metadata maps to the iRODS nouns which are: `"data_object", "collection", "resource", and "user"`.  To match metadata that may exist anywhere in a logical path, a `recursive` flag may be set to walk the path looking for matching metadata.
 
+An example might be:
 ```json
 "conditional" : {
     "logical_path" : "/tempZone/home/*",
-    "metadata" : {
+    "metadata_applied" : {
         "attribute" : "foo*",
         "value" : "bar*",
         "units" : "baz*",
         "entity_type" : "data_object"
-    },
-    "source_resource" : "src*",
-    "destination_resource" : "dest*"
+    }
 }
 ```
 
-The "entity_type" for the metadata maps to the iRODS nouns which are: "data_object", "collection", "resource", and "user".
+An example for matching metadata in a logical path used to invoke an indexing event:
+```json
+"conditional" : {
+    "logical_path" : "/tempZone/home/*",
+    "metadata_exists" : {
+        "recursive" : "true",
+        "attribute" : "irods::indexing::index",
+        "value" : "elasticsearch::full_text",
+        "entity_type" : "data_object"
+    }
+}
+```
 
+An example matching data objects put into a destination resource:
+```json
+"conditional" : {
+    "logical_path" : "/tempZone/home/*",
+    "destination_resource " : "dest_resc_*"
+}
+```
 ### Active Policy Clauses
-"active_policy_clauses" is configured as a JSON array of one or more of the following: `"pre", "post", "except", "finally"` which map to which dynamic policy enforcement points are triggered in the operation flow.
+`"active_policy_clauses"` is configured as a JSON array of one or more of the following: `"pre", "post", "except", "finally"` which map to which dynamic policy enforcement points are invoked at which point in the operation flow. For example:
+
+`"active_policy_clauses" : ["post"],`
 
 ### Events
-"events" is also configured as a JSON array of strings which map to the events generated by the event handler.  For the data object modified event handler an event may be one or more of the following `"create", "checksum", "copy", "get", "seek", "replication", "put", "rename", "trim", "truncate", "unlink", "register"`.
+`"events"` is also configured as a JSON array of strings which map to the events generated by the event handler. Each event handler will have its own set of events for which it may invoke policy which are documented below.  For a data object modified example where data is ingested:
+`"events" : ["create", "write", "registration"],`
 
-### Policy
-"policy" is a JSON string which is the name of the policy to invoke.  Following the "policy" is a "configuration" object which contains any specific information related to that given policy.
+### Policy to Invoke
+`"policy_to_invoke"` is a JSON string which is the name of the policy to invoke.  Following the policy is a "configuration" object which contains any specific information related to that given policy.  An example for data replication:
+```
+"policy_to_invoke" : "irods_policy_data_replication",
+"configuration" : {
+    "source_to_destination_map" : {
+        "edge_resource_0" : ["long_term_resource_0"],
+        "edge_resource_1" : ["long_term_resource_1"],
+}
+```
 
-### Parameters
+## Data Object Modified Event Handler
+The Data Object event handler unifies both the Object and POSIX semantics, as well as other iRODS specific operations such as registration, into a single point of truth for invoking policy related to data access.  The plugin maps policy enforcement points to specific set of events for which policy may be configured.  The event handler provides events for all operations related to data objects:
+
+* CREATE
+* CHECKSUM
+* COPY
+* CREATE
+* CREATE
+* GET
+* SEEK
+* REPLICATION
+* PUT
+* RENAME
+* REPLICATION
+* TRIM
+* TRUNCATE
+* UNLINK
+* REGISTER
+
 The data object modified event handler captures all variables within the dataObjInp_t and rsComm_t which are then seralized to JSON and passed to the invoked policy.  Additional information such as the event, associated policy enforcement point are also included.
-
 ```json
 {
 "comm":{
@@ -124,49 +147,8 @@ The data object modified event handler captures all variables within the dataObj
 }
 ```
 
-## Example Configuration :: Synchronous Replication
-```JSON
-{
-    "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
-    "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
-    "plugin_specific_configuration": {
-        "policies_to_invoke" : [
-            {
-                "conditional" : {
-                    "logical_path" : "\/tempZone.*"
-                },
-                "active_policy_clauses" : ["post"],
-                "events" : ["create", "write", "registration"],
-                "policy" : "irods_policy_data_replication",
-                "configuration" : {
-                    "source_to_destination_map" : {
-                        "edge_resource_0" : ["long_term_resource_0"],
-                        "edge_resource_1" : ["long_term_resource_1"],
-                    }
-                }
-            },
-            {
-                "conditional" : {
-                    "logical_path" : "\/tempZone.*"
-                },
-                "active_policy_clauses" : ["pre"],
-                "events" : ["get"],
-                "policy" : "irods_policy_data_replication",
-                "configuration" : {
-                    "source_to_destination_map" : {
-                        "long_term_resource_0" : ["edge_resource_0"],
-                        "long_term_resource_1" : ["edge_resource_1"]
-                    }
-                }
-            }
-        ]
-    }
-}
-```
-
 ## Metadata Modified Event Handler
-
-The metadata modifed event handler reacts to the interaction of a client with the user defined metadata within the catalog.  It generates a parameter object of the following form:
+The metadata modifed event handler reacts to the interaction of a client with the user defined metadata within the catalog and generates one event: `METADATA`.  It provides a parameter object of the following form:
 
 ```json
 {
@@ -182,13 +164,19 @@ The metadata modifed event handler reacts to the interaction of a client with th
     "user_name" : ""
 }
 ```
-Where `logical_path`, `source_resource`, and `user_name` are optional depending on the target of the metadata operation.  `entity_type` may be one of `data_object`, `collection`, `resource` or `user`.
+Where `logical_path`, `source_resource`, and `user_name` are optional depending on the target of the metadata operation.  `entity_type` may be one of `data_object`, `collection`, `resource` or `user`.  And, `"operation"` may be one of the following: `set`, `add`, or `remove`.
+
+## Collection Event Handler
+The collection event handler emits three operations: `CREATE`, `REMOVE`, and `REGISTER`.  For the `REGISTER` operation it provides a parameters object identical to the *Data Object Modified* event handler including the dataObjInp_t and rcComm_t.  For the `CREATE` and `REMOVE` operations the collInp_t is serialized which provides: `logical_path`, `flags`, `opr_type`, and the `cond_input`.
+
+## Administration Event Handlers: Resource, User, Group and Zone
+Interaction with the other nouns in the sytem is performed solely through the general administration API endpoint, which allows for these event handlers to provide identical configuraiton and behavior.  The events emitted are `CREATE`, `MODIFY` and `REMOVE`.  The generalAdminInp_t is serialized which provides `action`, `target`, and `arg2` through `arg9` which contain various information depending on the action and target in question.  Additionall, depending on the target `user_name`, `group_name`, `source_resource` or `zone` will be present.
 
 ## Policy Engines
 
 The policy engine framework provides a set of utilities for the creation of a light rule engine plugin which implements a policy that conforms to the Event Handler interface.  It is a goal that the community continues to capture policy which may be reflected as reusable components within this framework.
 
-## Query Processor
+### Query Processor
 
 The `irods_policy_query_processor` policy engine wraps the query_processor library within the iRODS development environment.  This policy engine will invoke a configured policy for every resulting row from the given query.  Each resulting row is passed to the invoked policy via the parameters as a JSON array `query_results`.  The data within the array arrives in the same order as the columns selected witin the query.
 
