@@ -18,15 +18,16 @@ namespace {
 
     const pc::event_map_type a2k{
         {"user",     "user_name"},
+        {"group",    "group_name"},
         {"resource", "source_resource"},
         {"zone",     "zone"}
     };
 
     auto general_administration_handler(
-          const std::string&         _target
-        , const std::string&         _rule_name
+          const std::string&        _target
+        , const std::string&        _rule_name
         , const pc::arguments_type& _arguments
-        , ruleExecInfo_t*            _rei) -> eh::handler_return_type
+        , ruleExecInfo_t*           _rei) -> eh::handler_return_type
     {
         auto it = pc::advance_or_throw(_arguments, 2);
 
