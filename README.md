@@ -189,3 +189,208 @@ The `irods_policy_query_processor` policy engine wraps the query_processor libra
 "configuration" : {
 }
 ```
+
+### Access Time
+The access time policy engine will annotate a data object with the last access time, which is useful for other policies such as data movement.  By default, a metadata attribute of `irods::access_time` is utilized, unless there is a `"attribute"` string present within the `"configuration"` of the policy, which may override the default.
+
+For example:
+```json
+            {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-access_time-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-access_time",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+            },
+            {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["put", "get", "create", "read", "write", "rename", "registration", "replication"],
+                            "policy_to_invoke"    : "irods_policy_access_time",
+                            "configuration" : {
+                                "attribute" : "custom_access_time_attribute"
+                            }
+                        }
+                    ]
+                }
+            }
+```
+
+### Data Replication
+This event handler will replicate data from a resource to a configured destination resource, or a map from source resource to an array of destination resources.
+
+#### Synchronous Replication
+```json
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+           },
+           {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["put", "create", "write", "registration"],
+                            "policy_to_invoke"    : "irods_policy_data_replication",
+                            "configuration" : {
+                                "destination_resource" : "AnotherResc",                                
+                            }
+                        }
+                    ]
+                }
+           },
+           {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["put", "create", "write", "registration"],
+                            "policy_to_invoke"    : "irods_policy_data_replication",
+                            "configuration" : {
+                                "source_to_destination_map" : {
+                                     "source_resource_0" : ["destination_resource_0", "destination_resource_1"],
+                                     "source_resource_1" : ["destination_resource_2", "destination_resource_3"]                                     
+                                }
+                            }
+                        }
+                    ]
+                }
+           }               
+```
+
+#### Asynchronous Replication
+```json
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+           },
+           {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["put", "create", "write", "registration"],
+                            "policy_to_invoke" : "irods_policy_enqueue_rule",
+                            "parameters" : {
+                                "delay_conditions" : "<PLUSET>1s</PLUSET>",
+                                "policy_to_invoke" : "irods_policy_execute_rule",
+                                "parameters" : {
+                                    "policy_to_invoke"    : "irods_policy_data_replication",
+                                    "configuration" : {
+                                        "source_to_destination_map" : {
+                                            "source_resource_0" : ["destination_resource_0", "destination_resource_1"],
+                                            "source_resource_1" : ["destination_resource_2", "destination_resource_3"]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+           }
+```           
+
+### Data Retention
+The data retention policy will either remove a given data object or trim a single replica of the data object depending on the `mode`.  The mode may either be `"trim_single_replica"` or `"remove_all_replicas"`.  The configuration also supports a `"resource_white_list"`, an array of resource names, which will limit the resources from which the configured policy may remove data.
+
+#### Synchronous Data Retention
+```json
+            {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+            },
+            {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["replication"],
+                            "policy_to_invoke"    : "irods_policy_data_retention",
+                            "configuration" : {
+                                "mode" : "trim_single_replica"
+                            }
+                        }
+                    ]
+                }
+            }
+```
+
+#### Asynchronous Data Retention
+```json
+            {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+            },
+            {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["replication"],
+                            "policy_to_invoke" : "irods_policy_enqueue_rule",
+                            "parameters" : {
+                                "delay_conditions" : "<PLUSET>1s</PLUSET>",                            
+                                "policy_to_invoke" : "irods_policy_execute_rule",
+                                "parameters" : {
+                                    "policy_to_invoke"    : "irods_policy_data_retention",
+                                    "configuration" : {
+                                        "mode" : "trim_single_replica",
+                                        "resource_white_list" : ["demoResc", "AnotherResc"]
+                                    }
+                                }
+                            }                            
+                        }
+                    ]
+                }
+            }
+```
+
+### Data Verification
+Data verification is used to determine if a replica of a data object is correct at rest.  This verification can take one of three methods as configured by administrative metadata annotating the replicas root resource: `irods::verification::type`.  Should another attribute be desired, it may be configured using the `"attribute"` setting.  Verificaiton types include: `"catalog"`, `"filesystem"`, and `"checksum"`.  The `"catalog"` mode will simply stat the object within the catalog to determine that it is properly registered.  The `"filesystem"` configuration will stat the object in the catalog and then stat the object at rest within the storage resource and compare sizes to determine they match.  Finally the `"checksum"` configuration will compute checksums of the replica at rest and compare that with the catalog.  Should no checksum exist in the catalog another good replica will be used to compute the checksum.
+
+#### Example Configuration
+```json
+            {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-data_verification-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-data_verification",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+            },
+            {
+                "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
+                "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
+                "plugin_specific_configuration": {
+                    "policies_to_invoke" : [
+                        {   "active_policy_clauses" : ["post"],
+                            "events" : ["replication"],
+                            "policy_to_invoke"    : "irods_policy_data_verification",
+                            "configuration" : {
+                                "log_errors" : "true",
+                                "attribute"  : "event_handler_attribute",
+                            }
+                        }
+                    ]
+                }
+            }
+```
