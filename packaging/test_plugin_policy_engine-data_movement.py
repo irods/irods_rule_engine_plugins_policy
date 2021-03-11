@@ -107,7 +107,7 @@ def data_movement_configured_with_event_handler(arg=None):
                     "policies_to_invoke" : [
                         {   "active_policy_clauses" : ["post"],
                             "events" : ["put"],
-                            "policy_to_invoke"    : "irods_policy_data_replication",
+                            "policy_to_invoke"    : "irods_policy_data_movement",
                             "configuration" : {
                                 "destination_resource" : "AnotherResc"
                             }
