@@ -90,7 +90,6 @@ include(/usr/lib/irods/cmake/policy_composition_framework_cmake_utilities.cmake)
 # include all cmake files for rule engine plugins for this repository
 
 include(${CMAKE_SOURCE_DIR}/access_time.cmake)
-include(${CMAKE_SOURCE_DIR}/data_movement.cmake)
 include(${CMAKE_SOURCE_DIR}/data_replication.cmake)
 include(${CMAKE_SOURCE_DIR}/data_retention.cmake)
 include(${CMAKE_SOURCE_DIR}/data_verification.cmake)
