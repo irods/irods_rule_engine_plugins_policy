@@ -281,7 +281,7 @@ class TestPolicyEngineDataReplication(ResourceBase, unittest.TestCase):
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
@@ -318,7 +318,7 @@ OUTPUT ruleExecOut"""
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
@@ -373,17 +373,21 @@ OUTPUT ruleExecOut"""
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file' AND RESC_NAME = 'demoResc'",
               "query_limit" : 10,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_data_replication",
-              "configuration" : {
-                  "destination_resource" : "AnotherResc"
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_data_replication",
+                      "configuration" : {
+                          "destination_resource" : "AnotherResc"
+                      }
+                  }
+              ]
          }
     }
 }
@@ -412,7 +416,7 @@ OUTPUT ruleExecOut"""
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_data_replication",
         "parameters" : {
             "user_name" : "rods",
@@ -463,18 +467,22 @@ OUTPUT ruleExecOut"""
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file' AND RESC_NAME = 'demoResc'",
               "query_limit" : 10,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_data_replication",
-              "configuration" : {
-                  "attribute" : "query_processor_attribute",
-                  "destination_resource" : "AnotherResc"
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_data_replication",
+                      "configuration" : {
+                          "attribute" : "query_processor_attribute",
+                          "destination_resource" : "AnotherResc"
+                      }
+                  }
+              ]
          }
     }
 }

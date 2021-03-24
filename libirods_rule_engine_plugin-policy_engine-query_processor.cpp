@@ -39,19 +39,19 @@ namespace {
             const auto& params = ctx.parameters;
 
             // clang-format off
-            auto number_of_threads = pc::get(params, "number_of_threads", 4);
-            auto query_limit       = pc::get(params, "query_limit",       uint32_t{0});
-            auto query_type_string = pc::get(params, "query_type",        std::string{"general"});
-            auto query_string      = pc::get(params, "query_string",      std::string{});
-            auto policy_to_invoke  = pc::get(params, "policy_to_invoke",  std::string{});
+            auto number_of_threads  = pc::get(params, "number_of_threads",  4);
+            auto query_limit        = pc::get(params, "query_limit",        uint32_t{0});
+            auto query_type_string  = pc::get(params, "query_type",         std::string{"general"});
+            auto query_string       = pc::get(params, "query_string",       std::string{});
+            auto policies_to_invoke = pc::get(params, "policies_to_invoke", json{});
             // clang-format on
 
             if(query_string.empty()) {
                 return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty query string");
             }
 
-            if(policy_to_invoke.empty()) {
-                return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty policy_to_invoke");
+            if(policies_to_invoke.empty()) {
+                return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty policies_to_invoke");
             }
 
             if(ctx.parameters.contains("query_results")) {
@@ -98,23 +98,53 @@ namespace {
             }
 
             auto job = [&](const result_row& _results) {
+
+                // capture the row of results from the query
                 auto res_arr = json::array();
+
                 for(auto& r : _results) {
                     res_arr.push_back(r);
                 }
-                params_to_pass["query_results"] = res_arr;
-                std::string params_str = params_to_pass.dump(4);
 
-                std::string config_str{}, out_str{};
-                if(ctx.parameters.contains(kw::configuration)) {
-                   config_str = ctx.parameters.at(kw::configuration).dump(4);
-                }
+                std::list<boost::any> args;
 
-                std::list<boost::any> arguments;
-                arguments.push_back(boost::any(&params_str));
-                arguments.push_back(boost::any(&config_str));
-                arguments.push_back(boost::any(&out_str));
-                pc::invoke_policy(ctx.rei, policy_to_invoke, arguments);
+                for(auto policy : policies_to_invoke) {
+
+                    json pam{}, cfg{};
+
+                    if(policy.contains(kw::parameters)) {
+                        pam = policy.at(kw::parameters);
+                        pam.insert(params_to_pass.begin(), params_to_pass.end());
+                    }
+                    else {
+                        pam = params_to_pass;
+                    }
+
+                    if(policy.contains(kw::configuration)) {
+                        cfg = policy.at(kw::configuration);
+                    }
+                    else if(ctx.parameters.contains(kw::configuration)) {
+                       cfg = ctx.parameters.at(kw::configuration);
+                    }
+
+                    // inject query results into parameters
+                    pam["query_results"] = res_arr;
+
+                    auto pnm = policy.at(kw::policy_to_invoke).get<std::string>();
+
+                    std::string params{pam.dump()};
+                    std::string config{cfg.dump()};
+                    std::string out{};
+
+                    args.clear();
+                    args.push_back(boost::any(&params));
+                    args.push_back(boost::any(&config));
+                    args.push_back(boost::any(&out));
+
+                    pc::invoke_policy(ctx.rei, pnm, args);
+
+                } // for policy
+
             }; // job
 
             auto query_type = irods::query<rsComm_t>::convert_string_to_query_type(query_type_string);
