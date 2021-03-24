@@ -106,16 +106,20 @@ class TestPolicyEngineQueryProcessor(ResourceBase, unittest.TestCase):
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file'",
               "query_limit" : 1,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_testing_policy",
-              "configuration" : {
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_testing_policy",
+                      "configuration" : {
+                      }
+                  }
+              ]
          }
     }
 }
@@ -146,7 +150,7 @@ OUTPUT ruleExecOut"""
                     rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "lifetime" : 5,
@@ -154,9 +158,13 @@ OUTPUT ruleExecOut"""
               "query_limit" : 1,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_testing_policy",
-              "configuration" : {
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_testing_policy",
+                      "configuration" : {
+                      }
+                  }
+              ]
          }
     }
 }
@@ -188,7 +196,7 @@ OUTPUT ruleExecOut
                     rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "source_resource" : "demoResc",
@@ -197,9 +205,13 @@ OUTPUT ruleExecOut
               "query_limit" : 1,
               "query_type" : "general",
               "number_of_threads" : 1,
-              "policy_to_invoke" : "irods_policy_testing_policy",
-              "configuration" : {
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_testing_policy",
+                      "configuration" : {
+                      }
+                  }
+              ]
          }
     }
 }
@@ -231,7 +243,7 @@ OUTPUT ruleExecOut
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
               "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'incorrect_file_name'",
@@ -239,9 +251,13 @@ OUTPUT ruleExecOut
               "query_type" : "general",
               "number_of_threads" : 1,
               "default_results_when_no_rows_found" : [["rods", "/tempZone/home/rods", "test_put_file", "demoResc"]],
-              "policy_to_invoke" : "irods_policy_testing_policy",
-              "configuration" : {
-              }
+              "policies_to_invoke" : [
+                  {
+                      "policy_to_invoke" : "irods_policy_testing_policy",
+                      "configuration" : {
+                      }
+                  }
+              ]
          }
     }
 }
@@ -272,23 +288,31 @@ OUTPUT ruleExecOut"""
                 rule = """
 {
     "policy_to_invoke" : "irods_policy_execute_rule",
-    "payload" : {
+    "parameters" : {
         "policy_to_invoke" : "irods_policy_query_processor",
         "parameters" : {
             "query_string" : "SELECT COLL_NAME, DATA_NAME WHERE COLL_NAME = '/tempZone/home/rods' AND DATA_NAME = 'test_put_file'",
             "query_limit" : 1,
             "query_type" : "general",
             "number_of_threads" : 1,
-            "policy_to_invoke" : "irods_policy_query_processor",
-            "parameters" : {
-                "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '{0}' AND DATA_NAME = '{1}'",
-                "query_limit" : 1,
-                "query_type" : "general",
-                "number_of_threads" : 1,
-                "policy_to_invoke" : "irods_policy_testing_policy",
-                "configuration" : {
+            "policies_to_invoke" : [
+                {
+                    "policy_to_invoke" : "irods_policy_query_processor",
+                    "parameters" : {
+                        "query_string" : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE COLL_NAME = '{0}' AND DATA_NAME = '{1}'",
+                        "query_limit" : 1,
+                        "query_type" : "general",
+                        "number_of_threads" : 1,
+                        "policies_to_invoke" : [
+                            {
+                                "policy_to_invoke" : "irods_policy_testing_policy",
+                                "configuration" : {
+                                }
+                            }
+                        ]
+                    }
                 }
-            }
+            ]
         }
     }
 }
