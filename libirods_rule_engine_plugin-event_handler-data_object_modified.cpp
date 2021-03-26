@@ -81,9 +81,10 @@ namespace {
             obj[kw::event] = event;
             obj[kw::comm]  = comm;
 
-            auto p2i = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
+            auto p2i  = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
+            auto stop = eh::configuration->plugin_configuration.contains("stop_on_error");
 
-            pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, obj);
+            pc::invoke_policies_for_event(_rei, stop, event, _rule_name, p2i, obj);
 
         } // for i
 
@@ -132,19 +133,20 @@ namespace {
 
         auto inp = boost::any_cast<dataObjCopyInp_t*>(*it);
 
-        auto p2i = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
+        auto p2i  = eh::configuration->plugin_configuration.at(kw::policies_to_invoke);
+        auto stop = eh::configuration->plugin_configuration.contains("stop_on_error");
 
         json src = pc::serialize_dataObjInp_to_json(inp->srcDataObjInp);
         src[kw::policy_enforcement_point] = _rule_name;
         src[kw::event] = event;
         src[kw::comm]  = comm;
-        pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, src);
+        pc::invoke_policies_for_event(_rei, stop, event, _rule_name, p2i, src);
 
         json dst = pc::serialize_dataObjInp_to_json(inp->destDataObjInp);
         dst[kw::policy_enforcement_point] = _rule_name;
         dst[kw::event] = event;
         dst[kw::comm]  = comm;
-        pc::invoke_policies_for_event(_rei, event, _rule_name, p2i, dst);
+        pc::invoke_policies_for_event(_rei, stop, event, _rule_name, p2i, dst);
 
         return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
 

@@ -16,7 +16,7 @@ namespace {
 
     auto data_obj_inp_handler(
           const std::string&         _rule_name
-        , const pc::arguments_type& _arguments
+        , const pc::arguments_type&  _arguments
         , ruleExecInfo_t*            _rei) -> std::tuple<std::string, json>
     {
         auto comm = pc::serialize_rsComm_to_json(_rei->rsComm);

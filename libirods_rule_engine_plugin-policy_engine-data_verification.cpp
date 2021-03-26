@@ -29,10 +29,10 @@ namespace {
         const auto data_name = path.object_name();
 
         // query for list of all participating resources
-        auto qstr{boost::str(boost::format(
-                  "SELECT RESC_NAME WHERE COLL_NAME = '%s' AND DATA_NAME = '%s'")
-                  % coll_name.string()
-                  % data_name.string())};
+        auto qstr{fmt::format(
+                  "SELECT RESC_NAME WHERE COLL_NAME = '{}' AND DATA_NAME = '{}'"
+                  , coll_name.string()
+                  , data_name.string())};
 
         irods::query qobj{comm, qstr};
 
@@ -121,20 +121,34 @@ namespace {
                        , type
                        , logical_path
                        , source_resource
-                       , destination_resource);};
+                       , destination_resource);
+        };
 
-        auto verified = pc::exec_as_user(*comm, user_name, verif_fcn);
+        bool verified = false;
+
+        try {
+            verified = pc::exec_as_user(*comm, user_name, verif_fcn);
+        }
+        catch(const irods::exception& e) {
+            auto msg = fmt::format(
+                       "irods_policy_data_verification type [{}] failed from [{}] to [{}]"
+                       , type
+                       , source_resource
+                       , destination_resource);
+
+            return ERROR(e.code(), msg);
+        }
 
         if(verified) {
             return SUCCESS();
         }
         else {
-            return ERROR(
-                    UNMATCHED_KEY_OR_INDEX,
-                    boost::format("verification [%s] failed from [%s] to [%s]")
-                        % type
-                        % source_resource
-                        % destination_resource);
+            auto msg = fmt::format(
+                       "irods_policy_data_verification type [{}] failed from [{}] to [{}]"
+                       , type
+                       , source_resource
+                       , destination_resource);
+            return ERROR(UNMATCHED_KEY_OR_INDEX, msg);
         }
 
     } // data_verification_policy
