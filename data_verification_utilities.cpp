@@ -198,6 +198,12 @@ namespace {
             _data_size      = result[2];
             _data_checksum  = result[3];
         }
+
+        THROW(SYS_REPLICA_DOES_NOT_EXIST,
+              fmt::format("replica for [{}] does not exist on resource [{}]"
+              , _logical_path
+              , _resource_name));
+
     } // capture_replica_attributes
 
 } // namespace
@@ -213,11 +219,9 @@ namespace irods {
         const std::string& _destination_resource)
     {
 
-        throw_if_empty("verification type", _verification_type);
-        throw_if_empty("logical path", _logical_path);
-        throw_if_empty("source resource", _source_resource);
-        throw_if_empty("desitnation resource", _destination_resource);
-        throw_if_empty("source resource", _source_resource);
+        throw_if_empty("verification type",    _verification_type);
+        throw_if_empty("logical path",         _logical_path);
+        throw_if_empty("source resource",      _source_resource);
         throw_if_empty("desitnation resource", _destination_resource);
 
         std::string source_logical_path;

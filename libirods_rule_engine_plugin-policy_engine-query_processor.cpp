@@ -44,6 +44,7 @@ namespace {
             auto query_type_string  = pc::get(params, "query_type",         std::string{"general"});
             auto query_string       = pc::get(params, "query_string",       std::string{});
             auto policies_to_invoke = pc::get(params, "policies_to_invoke", json{});
+            auto stop_on_error      = pc::get(params, "stop_on_error",      std::string{}) == "true";
             // clang-format on
 
             if(query_string.empty()) {
@@ -143,6 +144,11 @@ namespace {
 
                     pc::invoke_policy(ctx.rei, pnm, args);
 
+                    if(stop_on_error && pc::contains_error(out)) {
+                        freeRErrorContent(&ctx.rei->rsComm->rError);
+                        break;
+                    }
+
                 } // for policy
 
             }; // job
@@ -189,7 +195,7 @@ namespace {
         }
         catch(const irods::exception& e) {
             if(CAT_NO_ROWS_FOUND == e.code()) {
-                // if nothing of interest is found, thats not an error
+                return SUCCESS();
             }
             else {
                 pc::exception_to_rerror(
