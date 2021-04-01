@@ -100,6 +100,53 @@ namespace {
 
     } // get_leaf_resources_string
 
+    void capture_replica_attributes(
+        rsComm_t*          _comm,
+        const std::string& _logical_path,
+        const std::string& _resource_name,
+        std::string&       _file_path,
+        std::string&       _data_size,
+        std::string&       _data_hierarchy,
+        std::string&       _data_checksum )
+    {
+        std::string coll_name, obj_name;
+
+        irods::get_object_and_collection_from_path(
+            _logical_path,
+            coll_name,
+            obj_name);
+
+        const auto leaf_str  = get_leaf_resources_string(_resource_name);
+        const auto query_str = fmt::format(
+                               "SELECT DATA_PATH, DATA_RESC_HIER, DATA_SIZE, "
+                               "DATA_CHECKSUM WHERE DATA_NAME = '{}' AND "
+                               "COLL_NAME = '{}' AND DATA_RESC_ID IN ({})"
+                               , obj_name
+                               , coll_name
+                               , leaf_str);
+        irods::query<rsComm_t> qobj{_comm, query_str, 1};
+        if(qobj.size() > 0) {
+            const auto result = qobj.front();
+            _file_path      = result[0];
+            _data_hierarchy = result[1];
+            _data_size      = result[2];
+            _data_checksum  = result[3];
+
+            return;
+        }
+
+        THROW(SYS_REPLICA_DOES_NOT_EXIST,
+              fmt::format("replica for [{}] does not exist on resource [{}]"
+              , _logical_path
+              , _resource_name));
+
+    } // capture_replica_attributes
+
+} // namespace
+
+
+namespace irods {
+
     void get_object_and_collection_from_path(
         const std::string& _logical_path,
         std::string&       _collection_name,
@@ -166,50 +213,6 @@ namespace {
         return checksum;
 
     } // compute_checksum_for_resource
-
-    void capture_replica_attributes(
-        rsComm_t*          _comm,
-        const std::string& _logical_path,
-        const std::string& _resource_name,
-        std::string&       _file_path,
-        std::string&       _data_size,
-        std::string&       _data_hierarchy,
-        std::string&       _data_checksum )
-    {
-        std::string coll_name, obj_name;
-        get_object_and_collection_from_path(
-            _logical_path,
-            coll_name,
-            obj_name);
-        const auto leaf_str = get_leaf_resources_string(
-                                   _resource_name);
-        const auto query_str = fmt::format(
-                               "SELECT DATA_PATH, DATA_RESC_HIER, DATA_SIZE, "
-                               "DATA_CHECKSUM WHERE DATA_NAME = '{}' AND "
-                               "COLL_NAME = '{}' AND DATA_RESC_ID IN ({})"
-                               , obj_name
-                               , coll_name
-                               , leaf_str);
-        irods::query<rsComm_t> qobj{_comm, query_str, 1};
-        if(qobj.size() > 0) {
-            const auto result = qobj.front();
-            _file_path      = result[0];
-            _data_hierarchy = result[1];
-            _data_size      = result[2];
-            _data_checksum  = result[3];
-        }
-
-        THROW(SYS_REPLICA_DOES_NOT_EXIST,
-              fmt::format("replica for [{}] does not exist on resource [{}]"
-              , _logical_path
-              , _resource_name));
-
-    } // capture_replica_attributes
-
-} // namespace
-
-
-namespace irods {
 
     bool verify_replica_for_destination_resource(
         rsComm_t*          _comm,
