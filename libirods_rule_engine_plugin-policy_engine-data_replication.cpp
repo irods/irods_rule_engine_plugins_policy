@@ -86,9 +86,7 @@ namespace {
             std::cout << "irods_policy_data_replication :: parameters " << ctx.parameters.dump(4) << "\n";
         }
 
-        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
-
-        std::tie(user_name, logical_path, source_resource, destination_resource) =
+        auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
         auto comm = ctx.rei->rsComm;
@@ -126,6 +124,7 @@ namespace {
             }
 
             destination_resource = extract_object_parameter<std::string>("destination_resource", ctx.configuration);
+
             if(!destination_resource.empty()) {
                 if(log_actions) {
                     std::cout << "irods_policy_data_replication :: replicating ["
@@ -158,6 +157,11 @@ namespace {
                 }
 
                 auto src_dst_map{ctx.configuration.at("source_to_destination_map")};
+
+                if(!src_dst_map.contains(source_resource)) {
+                    rodsLog(LOG_NOTICE, "irods_policy_data_replication - source resource is not present in map [%s]", source_resource.c_str());
+                    return SUCCESS();
+                }
 
                 auto dst_resc_arr{src_dst_map.at(source_resource)};
                 auto destination_resources = dst_resc_arr.get<std::vector<std::string>>();
