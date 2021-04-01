@@ -144,7 +144,7 @@ namespace {
 
                     pc::invoke_policy(ctx.rei, pnm, args);
 
-                    if(stop_on_error && pc::contains_error(out)) {
+                    if(stop_on_error && out.size() > 0 && pc::contains_error(out)) {
                         freeRErrorContent(&ctx.rei->rsComm->rError);
                         break;
                     }
