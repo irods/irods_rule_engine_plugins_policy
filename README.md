@@ -456,40 +456,53 @@ Example:
             }
 ```
 
-### Filesystem Usage
-This policy will compute the filesystem usage of a storage resource's vault using the statvfs system call.  The percentage used is computed as: `100.0 * (1.0 - f_bavail / f_blocks)` and then applied as metadata to the resource via the attribute `irods::resource::filesystem_percent_used`.  This value may then be used by other policies such as data movement.
+### Checksum Verification
+Data integrity may be verified directly with a computation of the replica's checksum, and comparison with the assumed existing catalog value.  This policy requires a `logical_path` and a `source_resource` parameter in order to be invoked correctly.
 
 ### Example ConfigurationW
+
+Within the server configuration:
+
 ```json
-           {
-                "instance_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage-instance",
-                "plugin_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage",
+
+            {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-verify_checksum-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-verify_checksum",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
                 }
-           }
+            },
+
 ```
 
-An implementation of a periodic rule to invoke the policy:
+An implementation of periodic checksum verification:
 
 ```json
 {
     "policy_to_invoke" : "irods_policy_enqueue_rule",
     "parameters" : {
-        "comment"          : "Set the PLUSET value to the interval desired to run the rule",
-        "delay_conditions" : "<PLUSET>10s</PLUSET><EF>REPEAT FOR EVER</EF><INST_NAME>irods_rule_engine_plugin-cpp_default_policy-instance</INST_NAME>",
+        "delay_conditions" : "<PLUSET>1s</PLUSET><EF>REPEAT FOR EVER</EF><INST_NAME>irods_rule_engine_plugin-cpp_default_policy-instance</INST_NAME>",
         "policy_to_invoke" : "irods_policy_execute_rule",
         "parameters" : {
-            "policy_to_invoke"    : "irods_policy_filesystem_usage",
+            "policy_to_invoke"    : "irods_policy_query_processor",
             "parameters" : {
-                "source_resource" : "demoResc"
+                "query_string"  : "SELECT USER_NAME, COLL_NAME, DATA_NAME, RESC_NAME WHERE RESC_NAME like 'tier_%'",
+                "query_limit"   : 0,
+                "query_type"    : "general",
+                "number_of_threads" : 1,
+                "policies_to_invoke" : [
+                    {
+                        "policy_to_invoke" : "irods_policy_verify_checksum",
+                        "configuration" : {
+                            "log_errors" : "true"
+                        }
+                    }
+                ]
             }
         }
     }
 }
 INPUT null
 OUTPUT ruleExecOut
-
 ```
 
 ### Checksum Verification
@@ -527,4 +540,3 @@ INPUT null
 OUTPUT ruleExecOut
 
 ```
-
