@@ -58,8 +58,6 @@ class TestPolicyEngineFilesystemUsage(ResourceBase, unittest.TestCase):
             try:
                 rule = """
 {
-    "comment" : "S1.4 : When the disk usage exceeds 80%, files are automatically deleted from Tier 1 in the order of the oldest last access time",
-
     "policy_to_invoke" : "irods_policy_enqueue_rule",
     "parameters" : {
         "comment"          : "Set the PLUSET value to the interval desired to run the rule",
@@ -83,7 +81,7 @@ OUTPUT ruleExecOut
 
                 out = 'need more scope'
                 with filesystem_usage_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
                     done = False;
                     while(not done):
                         out, err, _ = admin_session.run_icommand(['iquest', '%s', "SELECT META_RESC_ATTR_VALUE WHERE RESC_NAME = 'demoResc' AND META_RESC_ATTR_NAME = 'irods::resource::filesystem_percent_used'"])

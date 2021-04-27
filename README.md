@@ -455,3 +455,76 @@ Example:
                 }
             }
 ```
+
+### Filesystem Usage
+This policy will compute the filesystem usage of a storage resource's vault using the statvfs system call.  The percentage used is computed as: `100.0 * (1.0 - f_bavail / f_blocks)` and then applied as metadata to the resource via the attribute `irods::resource::filesystem_percent_used`.  This value may then be used by other policies such as data movement.
+
+### Example ConfigurationW
+```json
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+           }
+```
+
+An implementation of a periodic rule to invoke the policy:
+
+```json
+{
+    "policy_to_invoke" : "irods_policy_enqueue_rule",
+    "parameters" : {
+        "comment"          : "Set the PLUSET value to the interval desired to run the rule",
+        "delay_conditions" : "<PLUSET>10s</PLUSET><EF>REPEAT FOR EVER</EF><INST_NAME>irods_rule_engine_plugin-cpp_default_policy-instance</INST_NAME>",
+        "policy_to_invoke" : "irods_policy_execute_rule",
+        "parameters" : {
+            "policy_to_invoke"    : "irods_policy_filesystem_usage",
+            "parameters" : {
+                "source_resource" : "demoResc"
+            }
+        }
+    }
+}
+INPUT null
+OUTPUT ruleExecOut
+
+```
+
+### Checksum Verification
+Data integrity may be verified directly with a computation of the replica's checksum, and comparison with the assumed existing catalog value.  This policy requires a `logical_path` and a `source_resource` parameter in order to be invoked correctly.
+
+### Example ConfigurationW
+```json
+           {
+                "instance_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage-instance",
+                "plugin_name": "irods_rule_engine_plugin-policy_engine-filesystem_usage",
+                "plugin_specific_configuration": {
+                    "log_errors" : "true"
+                }
+           }
+```
+
+An implementation of a periodic rule to invoke the policy:
+
+```json
+{
+    "policy_to_invoke" : "irods_policy_enqueue_rule",
+    "parameters" : {
+        "comment"          : "Set the PLUSET value to the interval desired to run the rule",
+        "delay_conditions" : "<PLUSET>10s</PLUSET><EF>REPEAT FOR EVER</EF><INST_NAME>irods_rule_engine_plugin-cpp_default_policy-instance</INST_NAME>",
+        "policy_to_invoke" : "irods_policy_execute_rule",
+        "parameters" : {
+            "policy_to_invoke"    : "irods_policy_filesystem_usage",
+            "parameters" : {
+                "source_resource" : "demoResc"
+            }
+        }
+    }
+}
+INPUT null
+OUTPUT ruleExecOut
+
+```
+
