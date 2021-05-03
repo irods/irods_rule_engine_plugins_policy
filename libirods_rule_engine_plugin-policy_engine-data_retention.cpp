@@ -1,6 +1,5 @@
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
 
 #include "parameter_substitution.hpp"
 
@@ -164,7 +163,6 @@ namespace {
         const auto coll_name = path.parent_path();
         const auto data_name = path.object_name();
 
-
         auto leaf_bundle = pe::compute_leaf_bundle(source_resource);
 
         auto qstr{boost::str(boost::format(
@@ -175,7 +173,7 @@ namespace {
 
         irods::query qobj{comm, qstr};
 
-        return qobj.size() > 0 ? qobj.front()[0] : "EMPTY_RESC_NAME";
+        return qobj.size() > 0 ? qobj.front()[0] : std::string{};
 
     } // get_leaf_resource_for_root
 
@@ -288,17 +286,10 @@ namespace {
 
     } // object_can_be_trimmed
 
-    irods::error data_retention_policy(const pe::context& ctx, pe::arg_type out)
+    auto data_retention_policy(const pe::context& ctx, pe::arg_type out)
     {
-        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
+        auto mode = pc::get(ctx.configuration, "mode", std::string{});
 
-        if(log_actions) {
-            std::cout << "irods_policy_data_retention :: parameters " << ctx.parameters.dump(4) << "\n";
-        }
-
-        pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
-
-        auto mode = cfg_mgr.get<std::string>("mode", "");
         if(!mode_is_supported(mode)) {
             return ERROR(SYS_INVALID_INPUT_PARAM,
                          boost::format("retention mode is not supported [%s]")
@@ -308,11 +299,20 @@ namespace {
         auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
+        pe::client_message({{"0.usage", fmt::format("{} requires user_name, logical_path, source_resource, or destination_resource and mode", ctx.policy_name)},
+                            {"1.user_name", user_name},
+                            {"2.logical_path", logical_path},
+                            {"3.source_resource", source_resource},
+                            {"4.destination_resource", destination_resource},
+                            {"5.mode", mode}});
+
         auto comm      = ctx.rei->rsComm;
-        auto whitelist = cfg_mgr.get("resource_white_list", json::array());
-        auto attribute = cfg_mgr.get(kw::attribute, "irods::retention::preserve_replicas");
+        auto whitelist = pc::get(ctx.configuration, "resource_white_list", json::array());
+        auto attribute = pc::get(ctx.configuration, kw::attribute, std::string{"irods::retention::preserve_replicas"});
 
         if(mode == retention_mode::remove_all) {
+            pe::client_message({{"0.message", fmt::format("{} mode is removing all replicas", ctx.policy_name)}});
+
             auto [unlink, resources_to_remove] =
             determine_resource_list_for_unlink(
                   comm
@@ -320,9 +320,11 @@ namespace {
                 , logical_path
                 , whitelist);
 
+            pe::client_message({{"0.message", fmt::format("{} unlink flag is {}", ctx.policy_name, unlink)}});
+
             // removing all replicas requires a call to unlink, cannot trim
             if(unlink) {
-                if(log_actions) { std::cout << "irods_policy_data_retention :: unlinking [" << logical_path << "] as user [" << user_name << "]\n"; }
+                pe::client_message({{"0.message", fmt::format("{} removing data object {}", ctx.policy_name, unlink, logical_path)}});
 
                 const auto ret = remove_data_object(
                                        DATA_OBJ_UNLINK_AN
@@ -341,10 +343,7 @@ namespace {
             // trim a specific list of replicas determined by policy
             else {
                 for(const auto& src : resources_to_remove) {
-                    if(log_actions) {
-                        std::cout << "irods_policy_data_retention :: trimming replica ["
-                                  << logical_path << "] from [" << src << "] as user [" << user_name << "]\n";
-                    }
+                    pe::client_message({{"0.message", fmt::format("{} trimming replica {} from {}", ctx.policy_name, unlink, logical_path, src)}});
 
                     const auto ret = remove_data_object(
                                            DATA_OBJ_TRIM_AN
@@ -368,21 +367,15 @@ namespace {
                 source_resource = get_source_resource(comm, logical_path, destination_resource);
             }
 
+            pe::client_message({{"0.message", fmt::format("{} mode is trimming single replica from {}", ctx.policy_name, source_resource)}});
+
             if(object_can_be_trimmed(comm, attribute, source_resource, whitelist)) {
 
                 auto leaf_name = std::string{};
 
-                if(source_resource.empty()) {
-                    leaf_name = source_resource;
-                }
-                else {
-                    leaf_name = get_leaf_resource_for_root(comm, source_resource, logical_path);
-                }
+                leaf_name = get_leaf_resource_for_root(comm, source_resource, logical_path);
 
-                if(log_actions) {
-                    std::cout << "irods_policy_data_retention :: trimming single replica ["
-                              << logical_path << "] from [" << leaf_name << "] as user [" << user_name << "]\n";
-                }
+                pe::client_message({{"0.message", fmt::format("{} trimming single replica {} from {}", ctx.policy_name, logical_path, leaf_name)}});
 
                 const auto ret = remove_data_object(
                                        DATA_OBJ_TRIM_AN

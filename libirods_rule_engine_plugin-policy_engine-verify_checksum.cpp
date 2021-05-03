@@ -27,6 +27,10 @@ namespace {
         std::tie(user_name, logical_path, source_resource, destination_resource) =
             capture_parameters(ctx.parameters, tag_last_resc);
 
+        pe::client_message({{"0.usage", fmt::format("{} requires logical_patah and source_resource", ctx.policy_name)},
+                            {"1.logical_path", logical_path},
+                            {"2.source_resource", source_resource}});
+
         auto catalog_checksum = std::string{};
         auto resc_hier = std::string{};
         auto phys_path = std::string{};
@@ -63,6 +67,13 @@ namespace {
                          , err.result()));
         }
 
+        pe::client_message({{"0.message", fmt::format("{} catalog_checksum {}", ctx.policy_name, catalog_checksum)},
+                            {"1.resc_hier", resc_hier},
+                            {"2.phys_path", phys_path},
+                            {"3.data_size", data_size},
+                            {"4.coll_name", coll_name},
+                            {"5.data_name", data_name}});
+
         fileChksumInp_t inp{};
         inp.dataSize = std::atoi(data_size.c_str());
         rstrcpy(inp.addr.hostAddr, location.c_str(),      NAME_LEN);
@@ -77,6 +88,8 @@ namespace {
                          , logical_path
                          , source_resource));
         }
+
+        pe::client_message({{"0.message", fmt::format("{} computed_checksum {}", ctx.policy_name, computed_checksum)}});
 
         if(!catalog_checksum.empty() && catalog_checksum != computed_checksum) {
             const auto msg = fmt::format("checksum mismatch for [{}] on resource [{}] computed [{}] catalog [{}]"
