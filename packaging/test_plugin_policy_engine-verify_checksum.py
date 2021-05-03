@@ -79,7 +79,7 @@ OUTPUT ruleExecOut
 
                 out = 'need more scope'
                 with filesystem_usage_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
 
             finally:
                 print('annnnd... were done\n')

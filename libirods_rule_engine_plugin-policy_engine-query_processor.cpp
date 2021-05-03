@@ -47,6 +47,14 @@ namespace {
             auto stop_on_error      = pc::get(params, "stop_on_error",      std::string{}) == "true";
             // clang-format on
 
+            pe::client_message({{"0.usage", fmt::format("{} requires query_string", ctx.policy_name)},
+                                {"1.number_of_threads", number_of_threads},
+                                {"2.query_limit", query_limit},
+                                {"3.query_type", query_type_string},
+                                {"4.query_string", query_string},
+                                {"5.policies_to_invoke", policies_to_invoke.dump(4)},
+                                {"6.stop_on_error", stop_on_error}});
+
             if(query_string.empty()) {
                 return ERROR(SYS_INVALID_INPUT_PARAM, "irods_policy_query_processor - empty query string");
             }
@@ -87,6 +95,8 @@ namespace {
 
             pe::parse_and_replace_query_string_tokens(query_string, values);
 
+            pe::client_message({{"0.message", fmt::format("{} query_string {}", ctx.policy_name, query_string)}});
+
             using json       = nlohmann::json;
             using result_row = irods::query_processor<rsComm_t>::result_row;
 
@@ -97,6 +107,8 @@ namespace {
             else {
                 params_to_pass = ctx.parameters;
             }
+
+            pe::client_message({{"0.message", fmt::format("{} params_to_pass {}", ctx.policy_name, params_to_pass.dump(4))}});
 
             auto job = [&](const result_row& _results) {
 

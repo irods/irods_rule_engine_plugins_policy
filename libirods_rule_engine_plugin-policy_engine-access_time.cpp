@@ -1,7 +1,6 @@
 
 #include "policy_composition_framework_policy_engine.hpp"
 #include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
 
 #include "rsModAVUMetadata.hpp"
 #include "rsOpenCollection.hpp"
@@ -16,12 +15,12 @@ namespace {
     using     json = nlohmann::json;
     // clang-format on
 
-    int update_access_time_for_data_object(
+    auto update_access_time_for_data_object(
           rsComm_t*          _comm
         , const std::string& _user_name
         , const std::string& _logical_path
-        , const std::string& _attribute) {
-
+        , const std::string& _attribute)
+    {
         auto ts = std::to_string(std::time(nullptr));
         modAVUMetadataInp_t avuOp{
             "set",
@@ -38,14 +37,14 @@ namespace {
 
     } // update_access_time_for_data_object
 
-    int apply_access_time_to_collection(
+    auto apply_access_time_to_collection(
           rsComm_t*          _comm
         , const std::string& _user_name
         , int                _handle
-        , const std::string& _attribute)
+        , const std::string& _attribute) -> int
     {
         collEnt_t* coll_ent{nullptr};
-        int err = rsReadCollection(_comm, &_handle, &coll_ent);
+        auto err = rsReadCollection(_comm, &_handle, &coll_ent);
         while(err >= 0) {
             if(DATA_OBJ_T == coll_ent->objType) {
                 using fsp = irods::experimental::filesystem::path;
@@ -64,8 +63,8 @@ namespace {
                     coll_inp.collName,
                     coll_ent->collName,
                     MAX_NAME_LEN);
-                int handle = rsOpenCollection(_comm, &coll_inp);
-                apply_access_time_to_collection(_comm, _user_name, handle, _attribute);
+                auto handle = rsOpenCollection(_comm, &coll_inp);
+                err = apply_access_time_to_collection(_comm, _user_name, handle, _attribute);
                 rsCloseCollection(_comm, &handle);
             }
 
@@ -108,26 +107,21 @@ namespace {
 
 
 
-    irods::error access_time_policy(const pe::context& ctx, pe::arg_type out)
+    auto access_time_policy(const pe::context& ctx, pe::arg_type out)
     {
-        pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
-
-        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
-        std::tie(user_name, logical_path, source_resource, destination_resource) =
+        auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
-        bool collection_operation = false;
+        pe::client_message({{"0.usage", fmt::format("{} requires user_name, and logical_path", ctx.policy_name)},
+                            {"1.user_name", user_name},
+                            {"2.logical_path", logical_path}});
 
-        auto attribute = cfg_mgr.get("attribute", "irods::access_time");
-
-        auto cond_input = pc::get(ctx.parameters, "cond_input", json{});
-
-        collection_operation = !cond_input.empty() && !cond_input[COLLECTION_KW].empty();
-
-        auto comm = ctx.rei->rsComm;
+        auto comm                 = ctx.rei->rsComm;
+        auto attribute            = pc::get(ctx.configuration, "attribute",  std::string{"irods::access_time"});
+        auto cond_input           = pc::get(ctx.parameters,    "cond_input", json{});
+        auto collection_operation = !cond_input.empty() && !cond_input[COLLECTION_KW].empty();
 
         if(!collection_operation) {
-
             user_name = get_user_name_for_data_object(comm, logical_path);
 
             int status =  update_access_time_for_data_object(comm, user_name, logical_path, attribute);
@@ -148,7 +142,7 @@ namespace {
                   coll_inp.collName
                 , logical_path.c_str()
                 , MAX_NAME_LEN);
-            int handle = rsOpenCollection(comm, &coll_inp);
+            auto handle = rsOpenCollection(comm, &coll_inp);
             if(handle < 0) {
                 return ERROR(
                            handle,
@@ -156,7 +150,7 @@ namespace {
                            logical_path);
             }
 
-            int status = apply_access_time_to_collection(comm, user_name, handle, attribute);
+            auto status = apply_access_time_to_collection(comm, user_name, handle, attribute);
             if(status < 0) {
                 return ERROR(
                            status,

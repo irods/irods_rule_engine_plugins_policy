@@ -52,7 +52,6 @@ def query_processor_configured(arg=None):
                 "instance_name": "irods_rule_engine_plugin-policy_engine-testing_policy-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-testing_policy",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
                 }
            }
         )
@@ -72,7 +71,6 @@ def query_processor_configured(arg=None):
                 "instance_name": "irods_rule_engine_plugin-policy_engine-access_time-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-access_time",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
                 }
            }
         )
@@ -82,7 +80,6 @@ def query_processor_configured(arg=None):
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_verification-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_verification",
                 "plugin_specific_configuration": {
-                    "log_errors" : "true"
                 }
            }
         )
@@ -141,7 +138,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with query_processor_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -239,7 +236,7 @@ OUTPUT ruleExecOut
                     with open(rule_file, 'w') as f:
                         f.write(rule)
 
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -286,7 +283,7 @@ OUTPUT ruleExecOut
                     with open(rule_file, 'w') as f:
                         f.write(rule)
 
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -332,7 +329,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with query_processor_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -387,7 +384,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with query_processor_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods_policy_testing_policy')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)

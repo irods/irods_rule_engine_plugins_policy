@@ -167,7 +167,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with access_time_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods::access_time')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -180,7 +180,7 @@ OUTPUT ruleExecOut"""
                 try:
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
-                    admin_session.assert_icommand('iput ' + filename)
+                    admin_session.assert_icommand('iput ' + filename, 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods::access_time')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -224,7 +224,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with access_time_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance',  '-F', rule_file], 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'irods::access_time')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -260,7 +260,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with access_time_alternate_attributes_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance',  '-F', rule_file], 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'access_time_attribute')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -295,7 +295,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with access_time_alternate_attributes_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance',  '-F', rule_file], 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'direct_invocation_attribute')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -307,7 +307,7 @@ OUTPUT ruleExecOut"""
                 try:
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
-                    admin_session.assert_icommand('iput ' + filename)
+                    admin_session.assert_icommand('iput ' + filename, 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'event_handler_attribute')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -352,7 +352,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with access_time_alternate_attributes_configured():
-                    admin_session.assert_icommand(['irule', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance',  '-F', rule_file], 'STDOUT_SINGLELINE', 'access')
                     admin_session.assert_icommand('imeta ls -d ' + filename, 'STDOUT_SINGLELINE', 'query_processor_attribute')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)

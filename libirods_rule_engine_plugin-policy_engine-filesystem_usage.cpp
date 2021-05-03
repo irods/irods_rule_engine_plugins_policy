@@ -38,12 +38,12 @@ namespace {
 
     irods::error filesystem_usage(const pe::context& ctx, pe::arg_type out)
     {
-        std::string user_name{}, logical_path{}, source_resource{}, destination_resource{};
-
-        std::tie(user_name, logical_path, source_resource, destination_resource) =
-            capture_parameters(ctx.parameters, tag_first_resc);
+        auto [un, lp, source_resource, dr] = capture_parameters(ctx.parameters, tag_first_resc);
 
         auto vault_path = get_vault_path(source_resource);
+
+        pe::client_message({{"0.usage", fmt::format("{} requires source_resource", ctx.policy_name)},
+                            {"1.vault_path", vault_path}});
 
         boost::filesystem::path path_to_stat{vault_path};
         while(!boost::filesystem::exists(path_to_stat)) {

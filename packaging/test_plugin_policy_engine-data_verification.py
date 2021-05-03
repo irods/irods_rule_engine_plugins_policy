@@ -171,7 +171,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
 
@@ -208,7 +208,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
 
@@ -245,7 +245,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
 
@@ -324,7 +324,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
 
@@ -380,7 +380,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type catalog')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -394,7 +394,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type catalog')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -408,7 +408,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type filesystem')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -423,7 +423,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type filesystem')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -437,7 +437,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type checksum')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -452,7 +452,7 @@ OUTPUT ruleExecOut"""
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
                     admin_session.assert_icommand('imeta set -R AnotherResc irods::verification::type checksum')
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
 
@@ -496,7 +496,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -541,7 +541,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -586,7 +586,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -680,7 +680,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -768,7 +768,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_verification_alternate_attributes_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -783,7 +783,7 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename)
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)

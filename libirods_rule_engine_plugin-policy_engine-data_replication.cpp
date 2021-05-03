@@ -18,7 +18,7 @@ namespace {
     using     json = nlohmann::json;
     // clang-format on
 
-    bool destination_replica_exists(
+    auto destination_replica_exists(
         rsComm_t* comm
       , const std::string& resource
       , const std::string& logical_path)
@@ -43,9 +43,7 @@ namespace {
 
     } // destination_replica_exists
 
-
-
-    int replicate_object_to_resource(
+    auto replicate_object_to_resource(
           rsComm_t*          _comm
         , const std::string& _user_name
         , const std::string& _logical_path
@@ -78,25 +76,26 @@ namespace {
 
     } // replicate_object_to_resource
 
-    irods::error replication_policy(const pe::context ctx, pe::arg_type out)
+    auto replication_policy(const pe::context ctx, pe::arg_type out)
     {
-        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
-
-        if(log_actions) {
-            std::cout << "irods_policy_data_replication :: parameters " << ctx.parameters.dump(4) << "\n";
-        }
+        auto comm = ctx.rei->rsComm;
 
         auto [user_name, logical_path, source_resource, destination_resource] =
             capture_parameters(ctx.parameters, tag_first_resc);
 
-        auto comm = ctx.rei->rsComm;
+        destination_resource = destination_resource.empty()
+                               ? pc::get(ctx.configuration, "destination_resource", std::string{})
+                               : destination_resource;
+
+        pe::client_message({{"0.usage", fmt::format("{} requires user_name, logical_path, source_resource, destination_resource or source_to_destination_map", ctx.policy_name)},
+                            {"1.user_name", user_name},
+                            {"2.logical_path", logical_path},
+                            {"3.source_resource", source_resource},
+                            {"4.destination_resource", destination_resource}});
 
         if(!destination_resource.empty()) {
-            if(log_actions) {
-                std::cout << "irods_policy_data_replication :: replicating ["
-                          << logical_path << " from [" << source_resource << "] to ["
-                          << destination_resource << "]\n";
-            }
+            pe::client_message({{"0.message", fmt::format("{} destination_resource is not emtpy", ctx.policy_name)},
+                                {"1.message", fmt::format("{} replicating {} from {} to {}", ctx.policy_name, logical_path, source_resource, destination_resource)}});
 
             // direct call invocation
             int err = replicate_object_to_resource(
@@ -115,83 +114,47 @@ namespace {
             }
         }
         else {
-            // event handler invocation
-            if(ctx.configuration.empty()) {
+            pe::client_message({{"0.message", fmt::format("{} destination_resource is emtpy, requires source_to_destination_map", ctx.policy_name)}});
+
+            if(ctx.configuration.find("source_to_destination_map") ==
+               ctx.configuration.end()) {
                 THROW(
                     SYS_INVALID_INPUT_PARAM,
-                    boost::format("%s - destination_resource is empty and configuration is not provided")
+                    boost::format("%s - destination_resource or source_to_destination_map not provided")
                     % ctx.policy_name);
             }
 
-            destination_resource = extract_object_parameter<std::string>("destination_resource", ctx.configuration);
+            auto src_dst_map{ctx.configuration.at("source_to_destination_map")};
 
-            if(!destination_resource.empty()) {
-                if(log_actions) {
-                    std::cout << "irods_policy_data_replication :: replicating ["
-                              << logical_path << " from [" << source_resource << "] to ["
-                              << destination_resource << "]\n";
-                }
+            if(!src_dst_map.contains(source_resource)) {
+                rodsLog(LOG_NOTICE, "irods_policy_data_replication - source resource is not present in map [%s]", source_resource.c_str());
+                return SUCCESS();
+            }
+
+            auto dst_resc_arr{src_dst_map.at(source_resource)};
+            auto destination_resources = dst_resc_arr.get<std::vector<std::string>>();
+            irods::error ret{SUCCESS()};
+
+            for( auto& dest : destination_resources) {
+                pe::client_message({{"0.message", fmt::format("{} replicating {} from {} to {}", ctx.policy_name, logical_path, source_resource, dest)}});
 
                 int err = replicate_object_to_resource(
                                 comm
                               , user_name
                               , logical_path
                               , source_resource
-                              , destination_resource);
+                              , dest);
                 if(err < 0) {
-                    return ERROR(
-                              err,
-                              boost::format("failed to replicate [%s] from [%s] to [%s]")
+                    ret = PASSMSG(
+                              boost::str(boost::format("failed to replicate [%s] from [%s] to [%s]")
                               % logical_path
-                              % source_resource
-                              % destination_resource);
+                              % source_resource),
+                              ret);
                 }
             }
-            else {
-                if(ctx.configuration.find("source_to_destination_map") ==
-                   ctx.configuration.end()) {
-                    THROW(
-                        SYS_INVALID_INPUT_PARAM,
-                        boost::format("%s - destination_resource or source_to_destination_map not provided")
-                        % ctx.policy_name);
-                }
 
-                auto src_dst_map{ctx.configuration.at("source_to_destination_map")};
-
-                if(!src_dst_map.contains(source_resource)) {
-                    rodsLog(LOG_NOTICE, "irods_policy_data_replication - source resource is not present in map [%s]", source_resource.c_str());
-                    return SUCCESS();
-                }
-
-                auto dst_resc_arr{src_dst_map.at(source_resource)};
-                auto destination_resources = dst_resc_arr.get<std::vector<std::string>>();
-                irods::error ret{SUCCESS()};
-
-                for( auto& dest : destination_resources) {
-                    if(log_actions) {
-                        std::cout << "irods_policy_data_replication :: replicating ["
-                                  << logical_path << " from [" << source_resource << "] to ["
-                                  << dest << "]\n";
-                    }
-
-                    int err = replicate_object_to_resource(
-                                    comm
-                                  , user_name
-                                  , logical_path
-                                  , source_resource
-                                  , dest);
-                    if(err < 0) {
-                        ret = PASSMSG(
-                                  boost::str(boost::format("failed to replicate [%s] from [%s] to [%s]")
-                                  % logical_path
-                                  % source_resource),
-                                  ret);
-                    }
-                }
-
-                if(!ret.ok()) {
-                    return ret;
-                }
+            if(!ret.ok()) {
+                return ret;
             }
         }
 

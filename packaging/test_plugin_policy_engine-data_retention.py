@@ -317,7 +317,7 @@ OUTPUT ruleExecOut"""
                 f.write(rule)
 
             with data_retention_remove_all_configured():
-                admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                 admin_session.assert_icommand('ils -l ' + filename, 'STDERR_SINGLELINE', 'does not exist')
 
 
@@ -354,7 +354,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_retention_trim_single_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -401,7 +401,7 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput -R AnotherResc ' + filename)
-                    admin_session.assert_icommand('irepl -R demoResc ' + filename)
+                    admin_session.assert_icommand('irepl -R demoResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -488,7 +488,7 @@ OUTPUT ruleExecOut"""
                 f.write(rule)
 
             with data_retention_remove_all_configured():
-                admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                 admin_session.assert_icommand('ils -l ' + filename, 'STDERR_SINGLELINE', 'does not exist')
 
 
@@ -594,7 +594,7 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_retention_alternate_attributes_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file])
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
             finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -609,7 +609,7 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput -R AnotherResc ' + filename)
-                    admin_session.assert_icommand('irepl -R demoResc ' + filename)
+                    admin_session.assert_icommand('irepl -R demoResc ' + filename, 'STDOUT_SINGLELINE', 'usage')
                     admin_session.assert_icommand('ils -l ' + filename, 'STDOUT_SINGLELINE', 'AnotherResc')
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)

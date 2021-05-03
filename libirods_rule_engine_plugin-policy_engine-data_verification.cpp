@@ -80,14 +80,7 @@ namespace {
 
     irods::error data_verification_policy(const pe::context& ctx, pe::arg_type out)
     {
-        auto comm        = ctx.rei->rsComm;
-        auto log_actions = pe::get_log_errors_flag(ctx.parameters, ctx.configuration);
-
-        if(log_actions) {
-            std::cout << "irods_policy_data_verification :: parameters " << ctx.parameters.dump(4) << "\n";
-        }
-
-        pe::configuration_manager cfg_mgr{ctx.instance_name, ctx.configuration};
+        auto comm = ctx.rei->rsComm;
 
         std::string user_name{}, logical_path{}, source_resource{}, destination_resource{}, type{}, units{};
 
@@ -96,13 +89,13 @@ namespace {
 
         if(source_resource.empty()) {
             // may be statically configured
-            source_resource = cfg_mgr.get("source_resource", source_resource);
+            source_resource = pc::get(ctx.configuration, "source_resource", source_resource);
         }
 
         std::tie(source_resource, destination_resource) =
             determine_source_and_destiation(comm, logical_path, source_resource, destination_resource);
 
-        auto attribute = cfg_mgr.get("attribute", "irods::verification::type");
+        auto attribute = pc::get(ctx.configuration, "attribute", std::string{"irods::verification::type"});
 
         std::tie(type, units) = get_metadata_for_resource(comm, attribute, destination_resource);
 
@@ -110,10 +103,12 @@ namespace {
             type = verification::catalog;
         }
 
-        if(log_actions) {
-            std::cout << "irods_policy_data_verification :: verifying " << logical_path
-                      << " with type " << type << " on resource " << destination_resource << "\n";
-        }
+        pe::client_message({{"0.usage", fmt::format("{} requires user_name, logical_path, source_resource, and destination_resource", ctx.policy_name)},
+                            {"1.user_name", user_name},
+                            {"2.logical_path", logical_path},
+                            {"3.source_resource", source_resource},
+                            {"4.destination_resource", destination_resource},
+                            {"5.type", type}});
 
         auto verif_fcn = [&](auto& comm) {
             return irods::verify_replica_for_destination_resource(
