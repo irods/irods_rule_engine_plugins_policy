@@ -1,7 +1,7 @@
 #ifndef IRODS_GENERAL_ADMINISTRATION_HANDLER_HPP
 #define IRODS_GENERAL_ADMINISTRATION_HANDLER_HPP
 
-#include "policy_composition_framework_event_handler.hpp"
+#include <irods/policy_composition_framework_event_handler.hpp>
 
 namespace {
     // clang-format off

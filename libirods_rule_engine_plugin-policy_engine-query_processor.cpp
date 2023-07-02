@@ -1,15 +1,15 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
+#include <irods/policy_composition_framework_configuration_manager.hpp>
+
+#include <irods/thread_pool.hpp>
+#include <irods/query_processor.hpp>
+
+#include <nlohmann/json.hpp>
+#include <fmt/format.h>
 
 #include "parameter_substitution.hpp"
-
-#include "thread_pool.hpp"
-#include "query_processor.hpp"
-
-#include "json.hpp"
-#include "fmt/format.h"
 
 namespace {
 

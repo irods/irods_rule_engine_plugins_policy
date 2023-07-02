@@ -1,9 +1,10 @@
 
 #include <string>
-#include "irods_resource_manager.hpp"
-#include "irods_query.hpp"
-#include "filesystem.hpp"
-#include "boost/lexical_cast.hpp"
+#include <boost/lexical_cast.hpp>
+
+#include <irods/irods_resource_manager.hpp>
+#include <irods/irods_query.hpp>
+#include <irods/filesystem.hpp>
 
 extern irods::resource_manager resc_mgr;
 

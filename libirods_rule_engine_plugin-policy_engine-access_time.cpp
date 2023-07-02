@@ -1,11 +1,11 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
 
-#include "rsModAVUMetadata.hpp"
-#include "rsOpenCollection.hpp"
-#include "rsReadCollection.hpp"
-#include "rsCloseCollection.hpp"
+#include <irods/rsModAVUMetadata.hpp>
+#include <irods/rsOpenCollection.hpp>
+#include <irods/rsReadCollection.hpp>
+#include <irods/rsCloseCollection.hpp>
 
 namespace {
 

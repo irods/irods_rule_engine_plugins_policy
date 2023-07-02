@@ -1,13 +1,14 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
 
-#include "irods_hierarchy_parser.hpp"
-#include "irods_server_api_call.hpp"
+#include <irods/irods_hierarchy_parser.hpp>
+#include <irods/irods_server_api_call.hpp>
+
+#include <irods/physPath.hpp>
+#include <irods/apiNumber.h>
+
 #include "parameter_substitution.hpp"
-
-#include "physPath.hpp"
-#include "apiNumber.h"
 
 namespace {
 

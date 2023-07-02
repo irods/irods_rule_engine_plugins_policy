@@ -1,17 +1,16 @@
 #define  IRODS_QUERY_ENABLE_SERVER_SIDE_API
-#include "irods_query.hpp"
-#include "irods_resource_manager.hpp"
-#include "physPath.hpp"
-#include "irods_server_api_call.hpp"
-#include "data_verification_utilities.hpp"
-#include "apiNumber.h"
-#include "filesystem.hpp"
-
-#include "rsFileStat.hpp"
+#include <irods/irods_query.hpp>
+#include <irods/irods_resource_manager.hpp>
+#include <irods/physPath.hpp>
+#include <irods/irods_server_api_call.hpp>
+#include <irods/apiNumber.h>
+#include <irods/filesystem.hpp>
+#include <irods/rsFileStat.hpp>
 
 #include <boost/lexical_cast.hpp>
+#include <fmt/format.h>
 
-#include "fmt/format.h"
+#include "data_verification_utilities.hpp"
 
 extern irods::resource_manager resc_mgr;
 
