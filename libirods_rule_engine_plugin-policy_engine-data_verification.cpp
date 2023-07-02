@@ -1,7 +1,8 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
+#include <irods/policy_composition_framework_configuration_manager.hpp>
+
 #include "data_verification_utilities.hpp"
 
 namespace {

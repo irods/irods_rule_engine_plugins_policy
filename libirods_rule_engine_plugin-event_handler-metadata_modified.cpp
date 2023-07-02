@@ -1,8 +1,9 @@
+#include <irods/rcConnect.h>
 
 #define IRODS_METADATA_ENABLE_SERVER_SIDE_API
-#include "metadata.hpp"
+#include <irods/metadata.hpp>
 
-#include "policy_composition_framework_event_handler.hpp"
+#include <irods/policy_composition_framework_event_handler.hpp>
 
 namespace {
 

@@ -1,10 +1,10 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
+#include <irods/policy_composition_framework_configuration_manager.hpp>
 
-#include "rsModAVUMetadata.hpp"
-#include "irods_resource_backport.hpp"
+#include <irods/rsModAVUMetadata.hpp>
+#include <irods/irods_resource_backport.hpp>
 
 #include <sys/statvfs.h>
 #include <boost/filesystem.hpp>

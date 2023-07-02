@@ -1,5 +1,5 @@
 
-#include "rcConnect.h"
+#include <irods/rcConnect.h>
 #include <string>
 
 namespace irods {

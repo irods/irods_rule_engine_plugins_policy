@@ -1,14 +1,14 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
+#include <irods/policy_composition_framework_configuration_manager.hpp>
 
-#include "rsModAVUMetadata.hpp"
+#include <irods/rsModAVUMetadata.hpp>
 
 #define IRODS_METADATA_ENABLE_SERVER_SIDE_API
-#include "metadata.hpp"
+#include <irods/metadata.hpp>
 
-#include "policy_composition_framework_event_handler.hpp"
+#include <irods/policy_composition_framework_event_handler.hpp>
 
 namespace {
 

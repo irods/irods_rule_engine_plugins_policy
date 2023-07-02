@@ -1,12 +1,12 @@
 
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
-#include "policy_composition_framework_configuration_manager.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
+#include <irods/policy_composition_framework_configuration_manager.hpp>
+
+#include <irods/irods_resource_backport.hpp>
+#include <irods/rsFileChksum.hpp>
 
 #include "data_verification_utilities.hpp"
-#include "irods_resource_backport.hpp"
-
-#include "rsFileChksum.hpp"
 
 namespace {
 

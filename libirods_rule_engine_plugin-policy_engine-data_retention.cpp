@@ -1,17 +1,17 @@
-#include "policy_composition_framework_policy_engine.hpp"
-#include "policy_composition_framework_parameter_capture.hpp"
+#include <irods/policy_composition_framework_policy_engine.hpp>
+#include <irods/policy_composition_framework_parameter_capture.hpp>
 
-#include "parameter_substitution.hpp"
+#include <irods/apiNumber.h>
+#include <irods/irods_server_api_call.hpp>
+#include <irods/irods_resource_manager.hpp>
+#include <irods/irods_hierarchy_parser.hpp>
 
-#include "apiNumber.h"
-#include "irods_server_api_call.hpp"
-#include "irods_resource_manager.hpp"
-#include "irods_hierarchy_parser.hpp"
-
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <iostream>
+
+#include "parameter_substitution.hpp"
 
 extern irods::resource_manager resc_mgr;
 

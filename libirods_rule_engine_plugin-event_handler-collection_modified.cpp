@@ -1,4 +1,4 @@
-#include "policy_composition_framework_event_handler.hpp"
+#include <irods/policy_composition_framework_event_handler.hpp>
 
 namespace {
     // clang-format off
