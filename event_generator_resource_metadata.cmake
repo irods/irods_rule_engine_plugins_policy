@@ -28,8 +28,6 @@ target_include_directories(
     ${TARGET_NAME}
     PRIVATE
     ${IRODS_INCLUDE_DIRS}
-    ${IRODS_EXTERNALS_FULLPATH_JSON}/include
-    ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
@@ -41,6 +39,7 @@ target_link_libraries(
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
+    nlohmann_json::nlohmann_json
     irods_common
     irods_dev_policy_engine
     pthread

@@ -1,3 +1,4 @@
+#include <irods/modAVUMetadata.h>
 #include <irods/rcConnect.h>
 
 #define IRODS_METADATA_ENABLE_SERVER_SIDE_API
