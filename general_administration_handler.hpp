@@ -34,7 +34,7 @@ namespace {
         const auto inp{boost::any_cast<generalAdminInp_t*>(*it)};
         auto obj = pc::serialize_generalAdminInp_to_json(*inp);
 
-        if(_target != obj["target"]) {
+        if(_target != obj["target"].get_ref<const std::string&>()) {
             return std::make_tuple(eh::SKIP_POLICY_INVOCATION, json{});
         }
 
