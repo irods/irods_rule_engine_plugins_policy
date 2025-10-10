@@ -27,11 +27,11 @@ from .. import lib
 @contextlib.contextmanager
 def data_retention_remove_all_direct_invocation_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -42,7 +42,7 @@ def data_retention_remove_all_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -52,23 +52,23 @@ def data_retention_remove_all_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_retention_trim_single_direct_invocation_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -78,7 +78,7 @@ def data_retention_trim_single_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -88,24 +88,23 @@ def data_retention_trim_single_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
-
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_retention_alternate_attributes_direct_invocation_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -116,7 +115,7 @@ def data_retention_alternate_attributes_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -126,14 +125,14 @@ def data_retention_alternate_attributes_direct_invocation_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 
 
@@ -145,11 +144,11 @@ def data_retention_alternate_attributes_direct_invocation_configured(arg=None):
 @contextlib.contextmanager
 def data_retention_remove_all_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -166,7 +165,7 @@ def data_retention_remove_all_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -177,7 +176,7 @@ def data_retention_remove_all_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -187,23 +186,23 @@ def data_retention_remove_all_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_retention_trim_single_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -221,7 +220,7 @@ def data_retention_trim_single_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -231,7 +230,7 @@ def data_retention_trim_single_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -241,24 +240,23 @@ def data_retention_trim_single_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
-
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_retention_with_whitelist_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -276,7 +274,7 @@ def data_retention_with_whitelist_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -287,7 +285,7 @@ def data_retention_with_whitelist_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -297,24 +295,24 @@ def data_retention_with_whitelist_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 
 @contextlib.contextmanager
 def data_retention_alternate_attributes_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -334,7 +332,7 @@ def data_retention_alternate_attributes_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_retention-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_retention",
@@ -345,7 +343,7 @@ def data_retention_alternate_attributes_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -355,14 +353,14 @@ def data_retention_alternate_attributes_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 class TestPolicyEngineDataRetention(ResourceBase, unittest.TestCase):
     def setUp(self):
@@ -419,6 +417,7 @@ OUTPUT ruleExecOut"""
                 with data_retention_trim_single_direct_invocation_configured():
                     admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'from ufs')
                     out, err, ec = admin_session.run_icommand('ils -l')
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('rnd') == -1)
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)
@@ -501,16 +500,19 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput -R rnd ' + filename)
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT')
                     out, err, ec = admin_session.run_icommand('ils -l')
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('rnd') == -1)
 
-                    admin_session.assert_icommand('irepl -R TestResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
+                    admin_session.assert_icommand('irepl -R TestResc ' + filename, 'STDOUT')
                     out, err, ec = admin_session.run_icommand('ils -l')
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('AnotherResc') == -1)
                     
-                    admin_session.assert_icommand('irepl -R demoResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
+                    admin_session.assert_icommand('irepl -R demoResc ' + filename, 'STDOUT')
                     out, err, ec = admin_session.run_icommand('ils -l')
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('TestResc') == -1)
                     
                 finally:
@@ -525,9 +527,9 @@ OUTPUT ruleExecOut"""
                     filename = 'test_put_file'
                     lib.create_local_testfile(filename)
                     admin_session.assert_icommand('iput ' + filename)
-                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT_SINGLELINE', 'Specifying a minimum number of replicas to keep is deprecated')
+                    admin_session.assert_icommand('irepl -R AnotherResc ' + filename, 'STDOUT')
                     out, err, ec = admin_session.run_icommand('ils -l')
-                    print(out)
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('demoResc') == -1)
                 finally:
                     admin_session.assert_icommand('irm -f ' + filename)
@@ -587,8 +589,9 @@ OUTPUT ruleExecOut"""
                     f.write(rule)
 
                 with data_retention_trim_single_configured():
-                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT_SINGLELINE', 'Spec')
+                    admin_session.assert_icommand(['irule', '-r', 'irods_rule_engine_plugin-cpp_default_policy-instance', '-F', rule_file], 'STDOUT')
                     out, err, ec = admin_session.run_icommand('ils -l')
+                    lib.log_command_result('ils -l', out, err, ec)
                     assert(out.find('demoResc') == -1)
             finally:
                 admin_session.assert_icommand('irm -f ' + filename)

@@ -79,11 +79,14 @@ namespace irods::policy_composition::policy_engine {
 
         std::vector<resource_manager::leaf_bundle_t> leaf_bundles =
             resc_mgr.gather_leaf_bundles_for_resc(resc_name);
-        for(const auto & bundle : leaf_bundles) {
-            for(const auto & leaf_id : bundle) {
-                leaf_id_str += "'" + std::to_string(leaf_id) + "',";
-            } // for
+        std::vector<std::string> quoted_ids;
+        for (const auto &bundle : leaf_bundles) {
+            std::transform(std::begin(bundle), std::end(bundle),
+                           std::back_inserter(quoted_ids),
+                           [](auto _id) { return fmt::format("'{}'", _id); });
+
         } // for
+        leaf_id_str = fmt::format("{}", fmt::join(quoted_ids, ", "));
 
         // if there is no hierarchy
         if(leaf_id_str.empty()) {
