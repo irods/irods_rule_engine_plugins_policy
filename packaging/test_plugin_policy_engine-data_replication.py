@@ -26,11 +26,11 @@ from .. import lib
 @contextlib.contextmanager
 def data_replication_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
@@ -40,7 +40,7 @@ def data_replication_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -50,23 +50,23 @@ def data_replication_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_replication_with_event_handler_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -84,7 +84,7 @@ def data_replication_with_event_handler_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
@@ -94,7 +94,7 @@ def data_replication_with_event_handler_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -104,23 +104,23 @@ def data_replication_with_event_handler_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_replication_with_event_handler_metadata_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -138,7 +138,7 @@ def data_replication_with_event_handler_metadata_configured(arg=None):
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
@@ -148,7 +148,7 @@ def data_replication_with_event_handler_metadata_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -158,24 +158,23 @@ def data_replication_with_event_handler_metadata_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
-
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_replication_alternate_attributes_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
@@ -186,7 +185,7 @@ def data_replication_alternate_attributes_configured(arg=None):
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -196,23 +195,23 @@ def data_replication_alternate_attributes_configured(arg=None):
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 @contextlib.contextmanager
 def data_replication_alternate_attributes_with_event_handler_configured(arg=None):
     filename = paths.server_config_path()
-    with lib.file_backed_up(filename):
-        irods_config = IrodsConfig()
-        irods_config.server_config['advanced_settings']['rule_engine_server_sleep_time_in_seconds'] = 1
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config = IrodsConfig()
+    irods_config.server_config['advanced_settings']['delay_server_sleep_time_in_seconds'] = 1
+
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
             {
                 "instance_name": "irods_rule_engine_plugin-event_handler-data_object_modified-instance",
                 "plugin_name": "irods_rule_engine_plugin-event_handler-data_object_modified",
@@ -231,7 +230,7 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
             }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-data_replication-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-data_replication",
@@ -242,7 +241,7 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
            }
         )
 
-        irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
+    irods_config.server_config['plugin_configuration']['rule_engines'].insert(0,
            {
                 "instance_name": "irods_rule_engine_plugin-policy_engine-query_processor-instance",
                 "plugin_name": "irods_rule_engine_plugin-policy_engine-query_processor",
@@ -252,14 +251,14 @@ def data_replication_alternate_attributes_with_event_handler_configured(arg=None
            }
         )
 
-        irods_config.commit(irods_config.server_config, irods_config.server_config_path)
 
-        IrodsController().restart()
-
-        try:
+    try:
+        with lib.file_backed_up(filename):
+            irods_config.commit(irods_config.server_config, irods_config.server_config_path)
+            IrodsController().reload_configuration()
             yield
-        finally:
-            pass
+    finally:
+        IrodsController().reload_configuration()
 
 
 class TestPolicyEngineDataReplication(ResourceBase, unittest.TestCase):
