@@ -197,6 +197,7 @@ namespace irods {
         addKeyVal(&data_obj_inp.condInput, RESC_NAME_KW, _resource_name.c_str());
 
         char* checksum_pointer{};
+	irods::at_scope_exit free_checksum_pointer{[&checksum_pointer]{free(checksum_pointer);}};
         const auto chksum_err = irods::server_api_call(DATA_OBJ_CHKSUM_AN, _comm, &data_obj_inp, &checksum_pointer);
         if(chksum_err < 0) {
             THROW(
@@ -208,7 +209,6 @@ namespace irods {
         }
 
         std::string checksum{checksum_pointer};
-        free(checksum_pointer);
 
         return checksum;
 
