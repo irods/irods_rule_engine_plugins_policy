@@ -192,6 +192,7 @@ namespace irods {
 
         // no checksum, compute one
         dataObjInp_t data_obj_inp{};
+	irods::at_scope_exit clear_data_obj{[&data_obj_inp]{clearDataObjInp(&data_obj_inp);}};
         rstrcpy(data_obj_inp.objPath, _logical_path.c_str(), MAX_NAME_LEN);
         addKeyVal(&data_obj_inp.condInput, RESC_NAME_KW, _resource_name.c_str());
 
