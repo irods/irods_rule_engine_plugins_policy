@@ -119,9 +119,9 @@ namespace {
             addKeyVal(&obj_inp.condInput, REPL_NUM_KW, repl_num.c_str());
         }
 
-        auto trim_fcn = [&](auto& comm) {
-	  auto res{irods::server_api_call(api_index, &comm, &obj_inp)};
-	  clearDataObjInp(&obj_inp);
+        auto trim_fcn = [&](auto &comm) {
+          auto res{irods::server_api_call(api_index, &comm, &obj_inp)};
+          clearDataObjInp(&obj_inp);
           return res;
         };
 
