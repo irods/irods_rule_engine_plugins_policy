@@ -120,6 +120,7 @@ namespace {
         }
 
         auto trim_fcn = [&](auto& comm) {
+	    clearDataObjInp(&obj_inp);
             return irods::server_api_call(api_index, &comm, &obj_inp);
         };
 
