@@ -97,6 +97,12 @@ OUTPUT ruleExecOut
 
             finally:
                 admin_session.assert_icommand('iqdel -a')
+
+                # Run 'command_to_execute' again to update 'out' since the value in the attribute
+                # 'irods::resource::filesystem_percent_used' may have been updated before the delay rules were cleared.
+                out, err, ec = admin_session.run_icommand(command_to_execute)
+                lib.log_command_result(command_to_execute, out, err, ec)
+
                 admin_session.assert_icommand('imeta rm -R demoResc irods::resource::filesystem_percent_used '+out)
 
 
