@@ -71,6 +71,7 @@ namespace {
         auto repl_fcn = [&](auto& comm){
             auto ret = irods::server_api_call(DATA_OBJ_REPL_AN, _comm, &data_obj_inp, &trans_stat);
             free(trans_stat);
+            clearDataObjInp(&data_obj_inp);
             return ret;};
 
         return pc::exec_as_user(*_comm, _user_name, repl_fcn);

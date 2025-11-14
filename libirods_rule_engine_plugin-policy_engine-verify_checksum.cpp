@@ -82,6 +82,8 @@ namespace {
         rstrcpy(inp.objPath,       logical_path.c_str(),  MAX_NAME_LEN);
 
         char* computed_checksum{};
+        irods::at_scope_exit free_computed_checksum{
+            [&computed_checksum] { std::free(computed_checksum); }};
         if(const auto ec = rsFileChksum(comm, &inp, &computed_checksum); ec < 0) {
             return ERROR(ec, fmt::format("{} :: rsFileChksum failed for {} on {}"
                          , "irods_policy_verify_checksum"
